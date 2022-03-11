@@ -22,6 +22,11 @@
  */
 #include <iostream>
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 
 #include "../include/global.h"
 #include "../include/logger.h"
@@ -55,7 +60,78 @@ int main(int argc, char **argv)
 	}
 	else if(atoi(argv[2]) < 1024 || atoi(argv[2]) > 65535) {
 		cse4589_print_and_log("Please enter a valid port number in range 1024 <= x <= 65535\n");
-	}	
-	
+	}
+
 	return 0;
+}
+/* Helper functions for SHELL output */
+void shell_success(char *command_str) {
+	cse4589_print_and_log("[%s:SUCCESS]\n", command_str);
+}
+
+void shell_end(char *command_str) {
+	cse4589_print_and_log("[%s:END]\n", command_str);
+}
+
+void shell_error(char *command_str) {
+	cse4589_print_and_log("[%s:ERROR]", command_str);
+	shell_end(command_str);
+}
+
+/* SHELL commands */
+void author(char *name) {
+	char *cmd = "AUTHOR";
+	shell_success(cmd);
+	cse4589_print_and_log("I, %s, have read and understood the course academic policy.\n", name);
+	shell_end(cmd);
+}
+
+void ip() { // uses code from section 6.3 of Beej's Guide to Network Programming
+	char *cmd = "IP";
+	int sockfd;
+	struct addrinfo hints, *res;
+
+	// load up adress structs with getaddrinfo()
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_DGRAM;
+
+	if ((getaddrinfo("8.8.8.8", "53", &hints, &res)) != 0) {
+		fprintf(stderr, "IP: getaddrinfo error: %s\n", gai_strerror(status));
+		shell_error(cmd);
+		return;
+	}
+
+	// make a socket
+	if ((sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) == -1) {
+		fprintf(stderr, "IP: socket error\n");
+		shell_error(cmd);
+		return;
+	}
+
+	// connect
+	if ((connect(sockfd, res->ai_addr, res->ai_addrlen)) == -1) {
+		fprintf(stderr, "IP: connect error\n");
+		shell_error(cmd);
+		return;
+	}
+
+	// get my IP Address
+	struct sockaddr_in myaddr;
+	memset(&my_addr, 0, sizeof(my_addr));
+	socklen_t len = sizeof(my_addr);
+	if ((getsockname(sockfd, (struct sockaddr *) &my_addr, &len)) == -1) {
+		fprintf(stderr, "IP: getsockname error\n");
+		shell_error(cmd);
+		return;
+	}
+	char ipstr[INET_ADDRSTRLEN]; // maybe INET_ADDR6STRLEN idk?? needs testing
+	if ((inet_ntop(AF_INET, my_addr->sin_addr, ipstr, sizeof(ipstr))) == NULL ) {
+		fprintf(stderr, "IP: inet_ntop error\n");
+		shell_error(cmd);
+		return;
+	}
+	shell_success(cmd);
+	cse4589_print_and_log("IP:%s\n", ipstr);
+	shell_end(cmd);
 }
