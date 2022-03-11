@@ -131,6 +131,15 @@ void ip() { // uses code from section 6.3 of Beej's Guide to Network Programming
 		shell_error(cmd);
 		return;
 	}
+	
+	// close UDP socket
+	if ((close(sockfd)) == -1) {
+		fprintf(stderr, "IP: close error\n:);
+		shell_error(cmd);
+		return;
+	}
+	
+	// Print output
 	shell_success(cmd);
 	cse4589_print_and_log("IP:%s\n", ipstr);
 	shell_end(cmd);
