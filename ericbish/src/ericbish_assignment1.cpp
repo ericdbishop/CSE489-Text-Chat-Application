@@ -27,6 +27,8 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <cstring>
+#include <fstream>
 
 #include "../include/global.h"
 #include "../include/logger.h"
@@ -116,25 +118,38 @@ void ip() { // uses code from section 6.3 of Beej's Guide to Network Programming
 		return;
 	}
 
+	/* 
+		Should it be sockaddr_in* instead of sockaddr_in?
+	*/
+
 	// get my IP Address
 	struct sockaddr_in myaddr;
-	memset(&my_addr, 0, sizeof(my_addr));
-	socklen_t len = sizeof(my_addr);
-	if ((getsockname(sockfd, (struct sockaddr *) &my_addr, &len)) == -1) {
+	memset(&myaddr, 0, sizeof(myaddr));
+	socklen_t len = sizeof(myaddr);
+	if ((getsockname(sockfd, (struct sockaddr *) &myaddr, &len)) == -1) {
 		fprintf(stderr, "IP: getsockname error\n");
 		shell_error(cmd);
 		return;
 	}
 	char ipstr[INET_ADDRSTRLEN]; // maybe INET_ADDR6STRLEN idk?? needs testing
-	if ((inet_ntop(AF_INET, my_addr->sin_addr, ipstr, sizeof(ipstr))) == NULL ) {
+
+	/*
+		ERROR because myaddr is a sockaddr_in type instead of a pointer type
+	*/
+	if ((inet_ntop(AF_INET, myaddr->sin_addr, ipstr, sizeof(ipstr))) == NULL ) {
 		fprintf(stderr, "IP: inet_ntop error\n");
 		shell_error(cmd);
 		return;
 	}
 	
+	/* 
+		ERROR resulting from calling close(). I think it is due to including
+		fstream instead of fstream.h but fstream.h produces a separate error.
+	*/
+
 	// close UDP socket
 	if ((close(sockfd)) == -1) {
-		fprintf(stderr, "IP: close error\n:);
+		fprintf(stderr, "IP: close error\n:");
 		shell_error(cmd);
 		return;
 	}
