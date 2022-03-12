@@ -5,12 +5,12 @@
  *
  * @section LICENSE
  *
- * This program_mode is free software; you can redistribute it and/or
+ * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation; either version 2 of
  * the License, or (at your option) any later version.
  *
- * This program_mode is distributed in the hope that it will be useful, but
+ * This program is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details at
@@ -32,13 +32,16 @@
 
 #include "../include/global.h"
 #include "../include/logger.h"
+#include "client.cpp"
+#include "server.cpp"
+
 
 using namespace std;
 
 #define SERVER true
 #define CLIENT false
 bool program_mode; // stores whether the program is in server or client mode
-void *program; // pointer to hold client or server object
+//void program; // pointer to hold client or server object
 
 /**
  * main function
@@ -72,11 +75,11 @@ int main(int argc, char **argv)
 	/* Create the client/server object */
 	if (argv[1] == "s") {
 		program_mode = SERVER;
-		program = *SERVER(atoi(argv[2]));
+		Server program = Server(atoi(argv[2]));
 	}
 	else if (argv[1] == "c") {
 		program_mode = CLIENT;
-		program = *Client(atoi(argv[2]));
+		Client program = Client(atoi(argv[2]));
 	}
 
 	/*
