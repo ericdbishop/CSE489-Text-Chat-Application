@@ -5,12 +5,12 @@
  *
  * @section LICENSE
  *
- * This program is free software; you can redistribute it and/or
+ * This program_mode is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation; either version 2 of
  * the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful, but
+ * This program_mode is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details at
@@ -34,6 +34,11 @@
 #include "../include/logger.h"
 
 using namespace std;
+
+#define SERVER true
+#define CLIENT false
+bool program_mode; // stores whether the program is in server or client mode
+void *program; // pointer to hold client or server object
 
 /**
  * main function
@@ -63,6 +68,20 @@ int main(int argc, char **argv)
 	else if(atoi(argv[2]) < 1024 || atoi(argv[2]) > 65535) {
 		cse4589_print_and_log("Please enter a valid port number in range 1024 <= x <= 65535\n");
 	}
+
+	/* Create the client/server object */
+	if (argv[1] == "s") {
+		program_mode = SERVER;
+		program = *SERVER(atoi(argv[2]));
+	}
+	else if (argv[1] == "c") {
+		program_mode = CLIENT;
+		program = *Client(atoi(argv[2]));
+	}
+
+	/*
+		Get user input here, and make according function calls
+	*/
 
 	return 0;
 }
@@ -118,7 +137,7 @@ void ip() { // uses code from section 6.3 of Beej's Guide to Network Programming
 		return;
 	}
 
-	/* 
+	/*
 		Should it be sockaddr_in* instead of sockaddr_in?
 	*/
 
@@ -141,10 +160,12 @@ void ip() { // uses code from section 6.3 of Beej's Guide to Network Programming
 		shell_error(cmd);
 		return;
 	}
-	
-	/* 
+
+	/*
 		ERROR resulting from calling close(). I think it is due to including
 		fstream instead of fstream.h but fstream.h produces a separate error.
+
+		https://www.ibm.com/docs/en/zvse/6.2?topic=SSB27H_6.2.0/fa2ti_call_close.html
 	*/
 
 	// close UDP socket
@@ -153,9 +174,21 @@ void ip() { // uses code from section 6.3 of Beej's Guide to Network Programming
 		shell_error(cmd);
 		return;
 	}
-	
+
 	// Print output
 	shell_success(cmd);
 	cse4589_print_and_log("IP:%s\n", ipstr);
+	shell_end(cmd);
+}
+
+void print_port() {
+	char *cmd = "PORT";
+	shell_success(cmd);
+	if (program_mode == SERVER) {
+		&(Server *)program.print_port(); // not sure if this is valid syntax, I will need to test it
+	}
+	else if (program_mode == CLIENT) {
+		&(Client *)program.print_port();
+	}
 	shell_end(cmd);
 }
