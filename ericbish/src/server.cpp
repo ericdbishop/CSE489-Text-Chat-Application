@@ -4,7 +4,9 @@
 #include "../include/global.h"
 #include "../include/logger.h"
 
-class Server {
+#include "process.cpp"
+
+class Server: public Process {
 public:
   int port_listen;
 
@@ -15,4 +17,4 @@ public:
   Server (int port) {
     port_listen = port;
   }
-}
+};
