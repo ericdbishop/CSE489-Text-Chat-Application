@@ -85,8 +85,10 @@ int main(int argc, char **argv)
 	}
 
 	/*
-		Get user input here, and make according function calls
+		The rest of this file should handle reading any further inputs from the
+		user and feeding them into the object for the Client or Server object.
 	*/
+
 
 	return 0;
 }

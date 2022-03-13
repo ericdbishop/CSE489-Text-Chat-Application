@@ -15,6 +15,9 @@ class Process {
 public:
     int port_listen;
 
+  Process (int port) {
+    port_listen = port;
+  }
 
 /* SHELL commands */
   void author(char *name) {
@@ -106,12 +109,7 @@ public:
   void print_port() {
 	  char *cmd = "PORT";
 	  shell_success(cmd);
-	  if (program_mode == SERVER) {
-		  &(Server *)program.print_port(); // not sure if this is valid syntax, I will need to test it
-	  }
-	  else if (program_mode == CLIENT) {
-		  &(Client *)program.print_port();
-	  }
+      cse4589_print_and_log("PORT:%d\n", port_listen);
 	  shell_end(cmd);
   }
 

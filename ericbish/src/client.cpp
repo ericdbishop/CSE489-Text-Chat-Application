@@ -10,11 +10,7 @@ class Client: public Process {
 public:
   int port_listen;
 
-  void print_port() {
-    cse4589_print_and_log("PORT:%d\n", port_listen);
-  }
-
-  Client (int port) {
-    port_listen = port;
-  }
+  //Client (int port) {
+    //port_listen = port;
+  //}
 };
