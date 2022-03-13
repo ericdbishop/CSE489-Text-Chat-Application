@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <cstring>
 #include <fstream>
+#include <unistd.h>
 #include "../include/global.h"
 #include "../include/logger.h"
 
@@ -29,7 +30,7 @@ public:
 
   void ip() { // uses code from section 6.3 of Beej's Guide to Network Programming
 	  char *cmd = "IP";
-	  int sockfd;
+	  int sockfd, status;
 	  struct addrinfo hints, *res;
 
 	  // load up adress structs with getaddrinfo()
@@ -37,7 +38,7 @@ public:
 	  hints.ai_family = AF_INET;
 	  hints.ai_socktype = SOCK_DGRAM;
 
-	  if ((getaddrinfo("8.8.8.8", "53", &hints, &res)) != 0) {
+	  if ((status = getaddrinfo("8.8.8.8", "53", &hints, &res)) != 0) {
 		  fprintf(stderr, "IP: getaddrinfo error: %s\n", gai_strerror(status));
 		  shell_error(cmd);
 		  return;
@@ -62,7 +63,7 @@ public:
 	  */
 
 	  // get my IP Address
-	  struct sockaddr_in myaddr;
+	  struct sockaddr_in *myaddr;
 	  memset(&myaddr, 0, sizeof(myaddr));
 	  socklen_t len = sizeof(myaddr);
 	  if ((getsockname(sockfd, (struct sockaddr *) &myaddr, &len)) == -1) {
@@ -75,7 +76,7 @@ public:
 	  /*
 		  ERROR because myaddr is a sockaddr_in type instead of a pointer type
 	  */
-	  if ((inet_ntop(AF_INET, myaddr->sin_addr, ipstr, sizeof(ipstr))) == NULL ) {
+	  if ((inet_ntop(AF_INET, &myaddr->sin_addr, ipstr, sizeof(ipstr))) == NULL ) {
 		  fprintf(stderr, "IP: inet_ntop error\n");
 		  shell_error(cmd);
 		  return;

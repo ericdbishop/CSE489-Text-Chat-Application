@@ -68,7 +68,10 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	else if(argv[1] != "s" || argv[1] != "c") {
-		cse4589_print_and_log("The first argument must be a 's' to initiate the server or a 'c' to initiate the client\n");
+		/* The double quotes allow you to split a string across multiple lines, I
+		 * did this for readability. */
+		cse4589_print_and_log("The first argument must be a 's' to initiate the" 
+		"server or a 'c' to initiate the client\n");
 	}
 	else if(atoi(argv[2]) < 1024 || atoi(argv[2]) > 65535) {
 		cse4589_print_and_log("Please enter a valid port number in range 1024 <= x <= 65535\n");

@@ -10,6 +10,8 @@ class Client: public Process {
 public:
   int port_listen;
 
+  using Process::Process;
+
   //Client (int port) {
     //port_listen = port;
   //}
