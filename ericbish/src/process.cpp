@@ -11,6 +11,8 @@
 #include "../include/global.h"
 #include "../include/logger.h"
 
+#include <list>
+
 void shell_success(char *command_str); 
 void shell_end(char *command_str);
 void shell_error(char *command_str);
@@ -26,15 +28,12 @@ struct client{
 	char hostname[128];
 };
 
-
 class Process {
 	public:
      int port_listen;
 	 //char hostname[128], ipstr[INET_ADDRSTRLEN]; // maybe INET_ADDR6STRLEN idk?? needs testing
-	/* I made connected_clients an array of 4 because there are four 
-	 * clients on the cse servers. */
 	 struct client *self;
-	 client connected_clients[4];
+	 std::list<client> connected_clients;
 
   Process (int port) {
     port_listen = port;
@@ -51,7 +50,6 @@ class Process {
 
 	self->listening_port = port;
 	makeClient(self);
-
 	/*
 	char *cmd = "IP";
     int sockfd, status;
@@ -163,8 +161,15 @@ class Process {
 	  char *cmd = "LIST";
 	  shell_success(cmd);
 	  // Obviously this print and log needs to be done for every connected host.
-	  for (int i = 0; i <= 5; i++) {
+	  int acc = 1;
+	  for(auto i = connected_clients.begin(); i != connected_clients.end(); ++i) {
 		// retrieve info for the next client in ascending port number order.
+		client currentClient = (*i);
+		list_id = acc;
+		port_listen = currentClient.listening_port;
+		hname = currentClient.hostname;
+		ip_addr = currentClient.ip;
+		acc++;
       	cse4589_print_and_log("%-5d%-35s%-20s%-8d\n", list_id, hname, ip_addr, port_listen);
 	  }
 	  shell_end(cmd);
