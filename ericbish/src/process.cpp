@@ -27,13 +27,13 @@ struct client{
 };
 
 class Process {
-public:
-    int port_listen;
-	char *hostname[128];
-
+	public:
+     int port_listen;
+	 char hostname[128], ipstr[INET_ADDRSTRLEN]; // maybe INET_ADDR6STRLEN idk?? needs testing
+	 struct addrinfo hints, *res;
 	/* I made connected_clients an array of 5 because there are five dedicated
 	 * hosts on the cse servers. */
-	client connected_clients[5];
+	 client connected_clients[5];
 
   Process (int port) {
     port_listen = port;
@@ -46,7 +46,60 @@ public:
 	 * we should be establishing the hostname and the ip within this
 	 * constructor. */
 
-	//int gethostname(hostname, sizeof(hostname));
+	char *cmd = "IP";
+    int sockfd, status;
+
+	// load up adress structs with getaddrinfo()
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_DGRAM;
+
+	if ((status = getaddrinfo("8.8.8.8", "53", &hints, &res)) != 0) {
+	 // Do we need the same error checking here if it is outside of the IP command?
+	 fprintf(stderr, "IP: getaddrinfo error: %s\n", gai_strerror(status));
+	 shell_error(cmd);
+	 return;
+	}
+
+	  // make a socket
+	if ((sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) == -1) {
+	 fprintf(stderr, "IP: socket error\n");
+	 shell_error(cmd);
+	 return;
+	}
+
+	// connect
+	if ((connect(sockfd, res->ai_addr, res->ai_addrlen)) == -1) {
+	 fprintf(stderr, "IP: connect error\n");
+	 shell_error(cmd);
+	 return;
+	}
+
+	// get my IP Address
+	struct sockaddr_in *myaddr;
+	memset(&myaddr, 0, sizeof(myaddr));
+	socklen_t len = sizeof(myaddr);
+	if ((getsockname(sockfd, (struct sockaddr *) &myaddr, &len)) == -1) {
+	 fprintf(stderr, "IP: getsockname error\n");
+	 shell_error(cmd);
+	 return;
+	}
+
+	if ((inet_ntop(AF_INET, &myaddr->sin_addr, ipstr, sizeof(ipstr))) == NULL ) {
+	 fprintf(stderr, "IP: inet_ntop error\n");
+	 shell_error(cmd);
+	 return;
+	}
+
+	// close UDP socket
+	if ((close(sockfd)) == -1) {
+	 fprintf(stderr, "IP: close error\n:");
+	 shell_error(cmd);
+	 return;
+	}
+
+	// This should make hostname equal to ai_canonname
+	std::strncpy(hostname, res->ai_canonname, sizeof(hostname));
   }
 
 /* SHELL commands */
@@ -54,66 +107,17 @@ public:
 	/*
 		Can we just hardcode the name to equal one or both of our ubit names?
 	*/
-  void author(char *name) {
+  void author() {
 	  char *cmd = "AUTHOR";
 	  shell_success(cmd);
+	  // I am assuming this should be ericbish since I generated the starter code.
+	  char *name = "ericbish";
 	  cse4589_print_and_log("I, %s, have read and understood the course academic policy.\n", name);
 	  shell_end(cmd);
   }
 
   void ip() { // uses code from section 6.3 of Beej's Guide to Network Programming
 	  char *cmd = "IP";
-	  int sockfd, status;
-	  struct addrinfo hints, *res;
-
-	  // load up adress structs with getaddrinfo()
-	  memset(&hints, 0, sizeof(hints));
-	  hints.ai_family = AF_INET;
-	  hints.ai_socktype = SOCK_DGRAM;
-
-	  if ((status = getaddrinfo("8.8.8.8", "53", &hints, &res)) != 0) {
-		  fprintf(stderr, "IP: getaddrinfo error: %s\n", gai_strerror(status));
-		  shell_error(cmd);
-		  return;
-	  }
-
-	  // make a socket
-	  if ((sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) == -1) {
-		  fprintf(stderr, "IP: socket error\n");
-		  shell_error(cmd);
-		  return;
-	  }
-
-	  // connect
-	  if ((connect(sockfd, res->ai_addr, res->ai_addrlen)) == -1) {
-		  fprintf(stderr, "IP: connect error\n");
-		  shell_error(cmd);
-		  return;
-	  }
-
-	  // get my IP Address
-	  struct sockaddr_in *myaddr;
-	  memset(&myaddr, 0, sizeof(myaddr));
-	  socklen_t len = sizeof(myaddr);
-	  if ((getsockname(sockfd, (struct sockaddr *) &myaddr, &len)) == -1) {
-		  fprintf(stderr, "IP: getsockname error\n");
-		  shell_error(cmd);
-		  return;
-	  }
-	  char ipstr[INET_ADDRSTRLEN]; // maybe INET_ADDR6STRLEN idk?? needs testing
-
-	  if ((inet_ntop(AF_INET, &myaddr->sin_addr, ipstr, sizeof(ipstr))) == NULL ) {
-		  fprintf(stderr, "IP: inet_ntop error\n");
-		  shell_error(cmd);
-		  return;
-	  }
-
-	  // close UDP socket
-	  if ((close(sockfd)) == -1) {
-		  fprintf(stderr, "IP: close error\n:");
-		  shell_error(cmd);
-		  return;
-	  }
 
 	  // Print output
 	  shell_success(cmd);
