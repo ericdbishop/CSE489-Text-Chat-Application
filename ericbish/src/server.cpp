@@ -14,9 +14,11 @@ void statistics();
 void blocked(char client_ip);
 void event();
 
-using Process::Process;
+/* I think the following line of code is redundant, according to one guide, the
+ * parent constructor of Process will be called automatically */
+//using Process::Process;
 
-  //Server (int port) {
-    //port_listen = port;
-  //}
+  Server (int port) : Process(port) {
+    // Can this be empty?
+  }
 };

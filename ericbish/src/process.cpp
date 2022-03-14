@@ -14,7 +14,7 @@
 void shell_success(char *command_str); 
 void shell_end(char *command_str);
 void shell_error(char *command_str);
-
+void makeClient(client *newClient);
 
 /* Create a instance of the client struct for each client that connects. Maintain
  * a list of connected clients for all processes so that they can call list().
@@ -25,6 +25,7 @@ struct client{
 	char *ip;
 	char *hostname[128];
 };
+
 
 class Process {
 	public:
@@ -119,6 +120,13 @@ class Process {
   void ip() { // uses code from section 6.3 of Beej's Guide to Network Programming
 	  char *cmd = "IP";
 
+		/* We still need to have some error handling in here, from how the PA1
+		 * description is written. So we could maybe have a separate helper
+		 * function that we call once when a process begins, to gather its
+		 * hostname and external ip and whatnot, and then everytime the IP
+		 * command is given we can call it again. The helper function will detect
+		 * errors and return -1 if something is wrong. */
+
 	  // Print output
 	  shell_success(cmd);
 	  cse4589_print_and_log("IP:%s\n", ipstr);
@@ -148,6 +156,64 @@ class Process {
 	  
   }
 
+};
+
+void makeClient(client *newClient){
+	client newClient = {};
+    
+	int sockfd, status;
+
+	// load up adress structs with getaddrinfo()
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_DGRAM;
+
+	if ((status = getaddrinfo("8.8.8.8", "53", &hints, &res)) != 0) {
+	 // Do we need the same error checking here if it is outside of the IP command?
+	 fprintf(stderr, "IP: getaddrinfo error: %s\n", gai_strerror(status));
+	 shell_error(cmd);
+	 return;
+	}
+
+	  // make a socket
+	if ((sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) == -1) {
+	 fprintf(stderr, "IP: socket error\n");
+	 shell_error(cmd);
+	 return;
+	}
+
+	// connect
+	if ((connect(sockfd, res->ai_addr, res->ai_addrlen)) == -1) {
+	 fprintf(stderr, "IP: connect error\n");
+	 shell_error(cmd);
+	 return;
+	}
+
+	// get my IP Address
+	struct sockaddr_in *myaddr;
+	memset(&myaddr, 0, sizeof(myaddr));
+	socklen_t len = sizeof(myaddr);
+	if ((getsockname(sockfd, (struct sockaddr *) &myaddr, &len)) == -1) {
+	 fprintf(stderr, "IP: getsockname error\n");
+	 shell_error(cmd);
+	 return;
+	}
+
+	if ((inet_ntop(AF_INET, &myaddr->sin_addr, ipstr, sizeof(ipstr))) == NULL ) {
+	 fprintf(stderr, "IP: inet_ntop error\n");
+	 shell_error(cmd);
+	 return;
+	}
+
+	// close UDP socket
+	if ((close(sockfd)) == -1) {
+	 fprintf(stderr, "IP: close error\n:");
+	 shell_error(cmd);
+	 return;
+	}
+
+	// This should make hostname equal to ai_canonname
+	std::strncpy(hostname, res->ai_canonname, sizeof(hostname));
 };
 
 /* Helper functions for SHELL output */

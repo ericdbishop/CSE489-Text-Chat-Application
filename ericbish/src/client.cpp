@@ -21,9 +21,11 @@ void exit();
 // msgReceived will handle incoming messages and print/log them
 void msgReceived();
 
-using Process::Process;
+/* I think the following line of code is redundant, according to one guide, the
+ * parent constructor of Process will be called automatically */
+//using Process::Process;
 
-  //Client (int port) {
-    //port_listen = port;
-  //}
+  Client (int port) : Process(port) {
+    // Can this be empty?
+  }
 };
