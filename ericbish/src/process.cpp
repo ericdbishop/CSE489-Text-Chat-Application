@@ -23,18 +23,18 @@ int makeClient(client *newClient);
 struct client{
 	int listening_port;
 	char *ip;
-	char *hostname[128];
+	char hostname[128];
 };
 
 
 class Process {
 	public:
      int port_listen;
-	 char hostname[128], ipstr[INET_ADDRSTRLEN]; // maybe INET_ADDR6STRLEN idk?? needs testing
-	/* I made connected_clients an array of 5 because there are five dedicated
-	 * hosts on the cse servers. */
+	 //char hostname[128], ipstr[INET_ADDRSTRLEN]; // maybe INET_ADDR6STRLEN idk?? needs testing
+	/* I made connected_clients an array of 4 because there are four 
+	 * clients on the cse servers. */
 	 struct client *self;
-	 client connected_clients[5];
+	 client connected_clients[4];
 
   Process (int port) {
     port_listen = port;
@@ -49,7 +49,9 @@ class Process {
 
 	memset(&self, 0, sizeof(client));
 
+	self->listening_port = port;
 	makeClient(self);
+
 	/*
 	char *cmd = "IP";
     int sockfd, status;
@@ -132,11 +134,17 @@ class Process {
 		 * command is given we can call it again. The helper function will detect
 		 * errors and return -1 if something is wrong. */
 
-      makeClient(self);
+		/* Will this prodcue issues if self has already been defined? */
+      int result = makeClient(self);
+
+	  if (result == -1){
+		  shell_error;
+		  return;
+	  }
 
 	  // Print output
 	  shell_success(cmd);
-	  cse4589_print_and_log("IP:%s\n", ipstr);
+	  cse4589_print_and_log("IP:%s\n", self->ip);
 	  shell_end(cmd);
   }
 
@@ -169,11 +177,11 @@ class Process {
 int makeClient(client *newClient){
     
 	char *cmd = "IP";
+	char ipstr[INET_ADDRSTRLEN]; // maybe INET_ADDR6STRLEN idk?? needs testing
 	struct addrinfo hints, *res;
 	int sockfd, status;
 
 	// load up adress structs with getaddrinfo()
-	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_DGRAM;
 
@@ -215,6 +223,11 @@ int makeClient(client *newClient){
 	 return -1;
 	}
 
+	newClient->ip = ipstr;
+	// This should make hostname equal to ai_canonname
+	std::strncpy(newClient->hostname, res->ai_canonname, sizeof(newClient->hostname));
+
+	return 1;
 };
 
 /* Helper functions for SHELL output */
