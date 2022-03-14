@@ -134,15 +134,16 @@ class Process {
 
   /* list() should  */
   void list() {
-	  int list_id;
-	  /* The following line should be removed once we are storing the ip_addr in
-	   * in a client structure within our list of client structures. */
-	  char *ip_addr;
+	  int list_id, port_listen;
+	  char *hname, *ip_addr;
 
 	  char *cmd = "LIST";
 	  shell_success(cmd);
 	  // Obviously this print and log needs to be done for every connected host.
-      cse4589_print_and_log("%-5d%-35s%-20s%-8d\n", list_id, hostname, ip_addr, port_listen);
+	  for (int i = 0; i <= 5; i++) {
+		// retrieve info for the next client in ascending port number order.
+      	cse4589_print_and_log("%-5d%-35s%-20s%-8d\n", list_id, hname, ip_addr, port_listen);
+	  }
 	  shell_end(cmd);
 	  
   }

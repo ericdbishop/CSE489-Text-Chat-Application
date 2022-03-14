@@ -10,7 +10,11 @@ class Server: public Process {
 public:
   int port_listen;
 
-  using Process::Process;
+void statistics();
+void blocked(char client_ip);
+void event();
+
+using Process::Process;
 
   //Server (int port) {
     //port_listen = port;
