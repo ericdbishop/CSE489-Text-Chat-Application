@@ -14,12 +14,12 @@
 void shell_success(char *command_str); 
 void shell_end(char *command_str);
 void shell_error(char *command_str);
-void makeClient(client *newClient);
+int makeClient(client *newClient);
 
 /* Create a instance of the client struct for each client that connects. Maintain
  * a list of connected clients for all processes so that they can call list().
  * We should actively maintain the correct order of clients so it goes from
- * smallest to largest port number*/
+ * smallest to largest port number */
 struct client{
 	int listening_port;
 	char *ip;
@@ -31,9 +31,9 @@ class Process {
 	public:
      int port_listen;
 	 char hostname[128], ipstr[INET_ADDRSTRLEN]; // maybe INET_ADDR6STRLEN idk?? needs testing
-	 struct addrinfo hints, *res;
 	/* I made connected_clients an array of 5 because there are five dedicated
 	 * hosts on the cse servers. */
+	 struct client *self;
 	 client connected_clients[5];
 
   Process (int port) {
@@ -47,6 +47,10 @@ class Process {
 	 * we should be establishing the hostname and the ip within this
 	 * constructor. */
 
+	memset(&self, 0, sizeof(client));
+
+	makeClient(self);
+	/*
 	char *cmd = "IP";
     int sockfd, status;
 
@@ -101,6 +105,7 @@ class Process {
 
 	// This should make hostname equal to ai_canonname
 	std::strncpy(hostname, res->ai_canonname, sizeof(hostname));
+	 */
   }
 
 /* SHELL commands */
@@ -126,6 +131,8 @@ class Process {
 		 * hostname and external ip and whatnot, and then everytime the IP
 		 * command is given we can call it again. The helper function will detect
 		 * errors and return -1 if something is wrong. */
+
+      makeClient(self);
 
 	  // Print output
 	  shell_success(cmd);
@@ -158,9 +165,11 @@ class Process {
 
 };
 
-void makeClient(client *newClient){
-	client newClient = {};
+/* Return 1 on success, -1 otherwise */
+int makeClient(client *newClient){
     
+	char *cmd = "IP";
+	struct addrinfo hints, *res;
 	int sockfd, status;
 
 	// load up adress structs with getaddrinfo()
@@ -171,22 +180,19 @@ void makeClient(client *newClient){
 	if ((status = getaddrinfo("8.8.8.8", "53", &hints, &res)) != 0) {
 	 // Do we need the same error checking here if it is outside of the IP command?
 	 fprintf(stderr, "IP: getaddrinfo error: %s\n", gai_strerror(status));
-	 shell_error(cmd);
-	 return;
+	 return -1;
 	}
 
 	  // make a socket
 	if ((sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) == -1) {
 	 fprintf(stderr, "IP: socket error\n");
-	 shell_error(cmd);
-	 return;
+	 return -1;
 	}
 
 	// connect
 	if ((connect(sockfd, res->ai_addr, res->ai_addrlen)) == -1) {
 	 fprintf(stderr, "IP: connect error\n");
-	 shell_error(cmd);
-	 return;
+	 return -1;
 	}
 
 	// get my IP Address
@@ -195,25 +201,20 @@ void makeClient(client *newClient){
 	socklen_t len = sizeof(myaddr);
 	if ((getsockname(sockfd, (struct sockaddr *) &myaddr, &len)) == -1) {
 	 fprintf(stderr, "IP: getsockname error\n");
-	 shell_error(cmd);
-	 return;
+	 return -1;
 	}
 
 	if ((inet_ntop(AF_INET, &myaddr->sin_addr, ipstr, sizeof(ipstr))) == NULL ) {
 	 fprintf(stderr, "IP: inet_ntop error\n");
-	 shell_error(cmd);
-	 return;
+	 return -1;
 	}
 
 	// close UDP socket
 	if ((close(sockfd)) == -1) {
 	 fprintf(stderr, "IP: close error\n:");
-	 shell_error(cmd);
-	 return;
+	 return -1;
 	}
 
-	// This should make hostname equal to ai_canonname
-	std::strncpy(hostname, res->ai_canonname, sizeof(hostname));
 };
 
 /* Helper functions for SHELL output */
