@@ -92,7 +92,7 @@ class Process {
 	  output(cmd, format, self->ip);
   }
 
-  void print_port() {
+  void port() {
 	  char *cmd = "PORT";
 	  char *format = "PORT:%d\n";
 	  output(cmd, format, self->listening_port);
