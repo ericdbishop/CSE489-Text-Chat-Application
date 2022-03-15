@@ -10,17 +10,19 @@ class Client: public Process {
 public:
   int port_listen;
   bool logged_in = false;
+  std::list<client> blocked;
 
-  void login(char server_ip, char server_port);
+  void login(char *server_ip, char *server_port);
   void refresh();
-  void send(char client_ip, char msg);
-  void broadcast(char msg);
-  void block(char client_ip);
-  void unblock(char client_ip);
+  void send(char *client_ip, char *msg);
+  void broadcast(char *msg);
+  void block(char *client_ip);
+  void unblock(char *client_ip);
   void logout();
   void exit();
   // msgReceived will handle incoming messages and print/log them
   void msg_received(char *client_ip, char *msg);
+  bool isBlocked(char *client_ip)
 
 /* I think the following line of code is redundant, according to one guide, the
  * parent constructor of Process will be called automatically */
@@ -61,7 +63,7 @@ public:
     
   }
 
-  /* Retrieve an updated list of loggin in clients from the server */
+  /* Retrieve an updated list of loggin in clients from the server and use it to update connected_clients */
   void refresh(){
     char *cmd = "REFRESH";
     require_login(cmd);
@@ -109,6 +111,14 @@ public:
     shell_success(cmd);
     cse4589_print_and_log(format, client_ip, msg);
     shell_end(cmd);
+  }
+
+  /***************************
+        HELPER FUNCTIONS
+  ***************************/
+
+  bool isBlocked(char *client_ip){
+
   }
 
 };
