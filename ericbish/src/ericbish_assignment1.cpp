@@ -106,7 +106,7 @@ int main(int argc, char **argv)
 	FD_ZERO(&master);
 
 	/* identifier STDIN is undefined. */
-	FD_SET(STDIN, &master); // add stdin to the file descriptor set
+	FD_SET(0, &master); // add stdin to the file descriptor set
 
 	while(true) {
 		readfds = master;

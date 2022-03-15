@@ -105,7 +105,6 @@ class Process {
 
 	  char *cmd = "LIST";
 	  shell_success(cmd);
-	  // Obviously this print and log needs to be done for every connected host.
 	  int acc = 1;
 	  for(auto i = connected_clients.begin(); i != connected_clients.end(); ++i) {
 		// retrieve info for the next client in ascending port number order.
