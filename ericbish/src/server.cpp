@@ -6,6 +6,14 @@
 
 #include "process.cpp"
 
+/* loggedClient struct contains statistics about each previously loggin in client. 
+ * Maintain a list of logged clients for server so that it can call statistics().
+ * We should actively maintain the correct order of clients so it goes from
+ * smallest to largest port number */
+struct loggedClient: Client {
+	int num_msg_sent, num_msg_rcv;
+};
+
 class Server: public Process {
 //Removed the public: because we should not need to redefine variables.
 
@@ -22,4 +30,11 @@ void event();
     // Server constructor
   }
 
+  /* statistics displays a numbered list of clients who are or have previously
+   * logged in to the server, who have not used the EXIT command, 
+   * with statistics such as their number of sent and received
+   * messages, and whether they are logged in or out. */
+  void statistics(){
+
+  }
 };
