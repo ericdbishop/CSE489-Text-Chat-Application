@@ -41,7 +41,7 @@ class Server: public Process {
 
 void statistics();
 void blocked(char *client_ip);
-void event();
+void event(char *from_client_ip, char *to_client_ip, char *msg, bool broadcast);
 
 /* I think the following line of code is redundant, according to one guide, the
  * parent constructor of Process will be called automatically */
@@ -79,6 +79,10 @@ void event();
 	  shell_end(cmd);
   }
 
+  /* blocked handles the BLOCKED command, which displays a list of client info
+   * for each client blocked by the client who's ip is given as an argument. The
+   * output is formatted the same as the list() command and sorted by ascending
+   * port numbers. */
   void blocked(char *client_ip) {
     char *cmd = "BLOCKED";
 	  int list_id, port_listen;
@@ -109,8 +113,19 @@ void event();
 
         shell_end(cmd);
       }
-
     }
+  }
+
+  /* The event function will handle output when a client sends a message 
+   * which is routed through the server. In the case of a broadcast message,
+   * the to_client_ip should be 255.255.255.255 */
+  void event(char *from_client_ip, char *to_client_ip, char *msg) {
+	  char *format = "%-5d%-35s%-8d%-8d%-8s\n";
+    char *cmd = "RELAYED";
+
+    shell_success(cmd);
+    cse4589_print_and_log(format, from_client_ip, to_client_ip, msg);
+    shell_end(cmd);
 
   }
 
