@@ -1,10 +1,16 @@
 #include <iostream>
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #include "../include/global.h"
 #include "../include/logger.h"
 
 #include "process.cpp"
+
+#define STDIN 0
+#define MSG_SIZE 256
+#define BACKLOG 5
 
 /* logged_client struct contains statistics about each previously loggin in client. 
  * Maintain a list of logged clients for server so that it can call statistics().
@@ -127,6 +133,94 @@ void event(char *from_client_ip, char *to_client_ip, char *msg, bool broadcast);
     cse4589_print_and_log(format, from_client_ip, to_client_ip, msg);
     shell_end(cmd);
 
+  }
+
+  /* This helper function creates the socket we listen for new connections on,
+   * it should be called during initialization of the Server
+   */
+  int create_listener() {
+    int server_socket, head_socket, selret, sock_index, fdaccept=0, caddr_len;
+	  struct sockaddr_in client_addr;
+	  struct addrinfo hints, *res;
+	  fd_set master_list, watch_list;
+
+    /* Set up hints structure */
+    memset(&hints, 0, sizeof(hints));
+        hints.ai_family = AF_INET;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_flags = AI_PASSIVE;
+
+    /* Fill up address structures */
+    if (getaddrinfo(NULL, to_string(self->listening_port).c_str(), &hints, &res) != 0){
+      perror("getaddrinfo failed");
+    }
+    
+    /* Socket */
+    server_socket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    if(server_socket < 0){
+      perror("Cannot create socket");
+    }
+    
+    /* Bind */
+    if(bind(server_socket, res->ai_addr, res->ai_addrlen) < 0 ){
+      perror("Bind failed");
+    }
+
+    freeaddrinfo(res);
+    
+    /* Listen */
+    if(listen(server_socket, BACKLOG) < 0){
+      perror("Unable to listen on port");
+    }
+  }
+
+  int read_inputs() {
+    fd_set readfds, master;
+    int fdmax = 0;
+
+    // clear the file descriptor sets
+    FD_ZERO(&readfds);
+    FD_ZERO(&master);
+
+    FD_SET(STDIN, &master); // add stdin to the file descriptor set
+
+    while(true) {
+      readfds = master;
+      if(select(fdmax+1, &readfds, NULL, NULL, NULL) == -1) {
+        fprintf(stderr, "select error\n");
+        // the code in the book makes a call to exit(4)
+        // not sure if this is how we should handle the error though
+      }
+      for (int i = 0; i <= fdmax; i++) {
+        if (FD_ISSET(i, &readfds)) { // found a file descriptor
+          if (i == STDIN) {
+            // HANDLE SHELL COMMANDS
+
+            // first we read the command from the command line
+            char *command = (char *)malloc(sizeof(char)*MSG_SIZE);
+            memset(command, '\0', MSG_SIZE);
+            if (fgets(command, MSG_SIZE-1, stdin) == NULL) {
+              exit(-1);
+            }
+
+            // now we call the corresponding helper functions
+            if (strcmp(command, "AUTHOR") == 0) {
+              program.author();
+            }
+            if (strcmp(command, "PORT") == 0) {
+              program.print_port();
+            }
+            //... maybe move this somewhere so we can handle client commands too
+          }
+          else if (i == listener) { // listener is the servers listening socket fd, I need to figure out how to store this in a variable
+            // accept new connections and add them to master set
+          }
+          else {
+            // handle data from a client
+          }
+        }
+      }
+    }
   }
 
 };
