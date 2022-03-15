@@ -39,39 +39,20 @@ class compareClient {
 
 class Process {
 	public:
-     int port_listen;
 	 //char hostname[128], ipstr[INET_ADDRSTRLEN]; // maybe INET_ADDR6STRLEN idk?? needs testing
 	 struct client *self;
 	 std::list<client> connected_clients;
 
   Process (int port) {
-    port_listen = port;
-	/* The addrinfo structure that we get in the call to ip() contains
-	 * ai_canonname which should be the hostname. Can we call getaddrinfo just
-	 * one time in the constructor of the class and then just reference it
-	 * elsewhere? */
-
-	/* This following line of commented out code is probably not necessary, but
-	 * we should be establishing the hostname and the ip within this
-	 * constructor. */
-
 	memset(&self, 0, sizeof(client));
 	self->listening_port = port;
 
-	/* Fill in the details for the self Client object and add it to the
-	 * connected_clients list. */
+	/* Fill in the details for the self Client object */
 	makeClient(self);
-	connected_clients.insert(connected_clients.begin(), *self);
-	// Sorting isn't neccesary here if it self is the only client in the list
-	// but for future reference this is how we sort:
-	// connected_clients.sort(compareClient());
   }
 
 /* SHELL commands */
 
-	/*
-		Can we just hardcode the name to equal one or both of our ubit names?
-	*/
   void author() {
 	  char *cmd = "AUTHOR";
 	  shell_success(cmd);
@@ -108,7 +89,7 @@ class Process {
   void print_port() {
 	  char *cmd = "PORT";
 	  shell_success(cmd);
-      cse4589_print_and_log("PORT:%d\n", port_listen);
+      cse4589_print_and_log("PORT:%d\n", self->listening_port);
 	  shell_end(cmd);
   }
 
@@ -188,7 +169,8 @@ int makeClient(client *newClient){
 	}
 
 	newClient->ip = ipstr;
-	// This should make hostname equal to ai_canonname
+	/* The res addrinfo structure contains
+	 * ai_canonname which should be the hostname. */
 	std::strncpy(newClient->hostname, res->ai_canonname, sizeof(newClient->hostname));
 
 	return 1;

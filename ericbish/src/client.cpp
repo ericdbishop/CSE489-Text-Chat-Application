@@ -26,6 +26,11 @@ void msgReceived();
 //using Process::Process;
 
   Client (int port) : Process(port) {
-    // Can this be empty?
+    // Add self Client object to list of connected clients.
+	  connected_clients.insert(connected_clients.begin(), *self);
+
+	  // Sorting isn't neccesary here if self is the only client in the list
+	  // but for future reference this is how we sort:
+	  // connected_clients.sort(compareClient());
   }
 };

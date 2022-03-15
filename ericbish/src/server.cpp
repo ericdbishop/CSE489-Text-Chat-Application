@@ -7,8 +7,7 @@
 #include "process.cpp"
 
 class Server: public Process {
-public:
-  int port_listen;
+//Removed the public: because we should not need to redefine variables.
 
 void statistics();
 void blocked(char client_ip);
@@ -18,7 +17,9 @@ void event();
  * parent constructor of Process will be called automatically */
 //using Process::Process;
 
+  // The process constructor should be called first.
   Server (int port) : Process(port) {
-    // Can this be empty?
+    // Server constructor
   }
+
 };
