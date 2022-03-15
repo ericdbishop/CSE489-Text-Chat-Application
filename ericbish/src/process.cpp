@@ -85,7 +85,7 @@ class Process {
       int result = makeClient(self);
 
 	  if (result == -1){
-		  shell_error;
+		  shell_error(cmd);
 		  return;
 	  }
 	  // Print output

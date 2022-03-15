@@ -10,7 +10,7 @@ class Client: public Process {
 public:
   int port_listen;
   bool logged_in = false;
-  std::list<client> blocked;
+  std::list<client> blocked_clients;
 
   void login(char *server_ip, char *server_port);
   void refresh();
@@ -22,7 +22,7 @@ public:
   void exit();
   // msgReceived will handle incoming messages and print/log them
   void msg_received(char *client_ip, char *msg);
-  bool isBlocked(char *client_ip)
+  bool isBlocked(char *client_ip);
 
 /* I think the following line of code is redundant, according to one guide, the
  * parent constructor of Process will be called automatically */
@@ -58,7 +58,7 @@ public:
     Process::list();
   }
 
-  void login(char server_ip, char server_port){
+  void login(char *server_ip, char *server_port){
     char *cmd = "LOGIN";
     
   }
@@ -69,27 +69,37 @@ public:
     require_login(cmd);
   }
   
-  void send(char client_ip, char msg){
+  void send(char *client_ip, char *msg){
     char *cmd = "SEND";
     require_login(cmd);
   }
   
-  void broadcast(char msg){
+  void broadcast(char *msg){
     char *cmd = "BROADCAST";
     require_login(cmd);
   
   }
   
-  void block(char client_ip){
+  void block(char *client_ip){
     char *cmd = "BLOCK";
     require_login(cmd);
+
+    if (isBlocked(client_ip)){
+      shell_error(cmd);
+    }
+
+    /* TO DO: NOTIFY SERVER */
   
+
   }
   
-  void unblock(char client_ip){
+  void unblock(char *client_ip){
     char *cmd = "UNBLOCK";
     require_login(cmd);
   
+    /* TO DO: NOTIFY SERVER */
+
+
   }
   
   void logout(){
@@ -118,6 +128,7 @@ public:
   ***************************/
 
   bool isBlocked(char *client_ip){
+    auto it = std::find(blocked_clients.begin(), blocked_clients.end(), client_ip);
 
   }
 
