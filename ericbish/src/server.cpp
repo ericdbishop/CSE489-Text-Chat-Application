@@ -15,6 +15,13 @@ struct logged_client:client {
   char *status;
 };
 
+/* each blocked_by structure contains the information of a client and a list of
+ * every client they have blocked. This makes it easy to sort the list of
+ * blocked clients using the compareClient() comparison. */
+struct blocked_by:client {
+  std::list<client> blocked;
+};
+
 /* If we can't just use the compareClient comparison for our logged_client child
  * object then uncomment this code. */
 //class comparelogged_client {
@@ -30,9 +37,10 @@ struct logged_client:client {
 class Server: public Process {
   public:
 	std::list<logged_client> logged_clients;
+  std::list<blocked_by> block_lists;
 
 void statistics();
-void blocked(char client_ip);
+void blocked(char *client_ip);
 void event();
 
 /* I think the following line of code is redundant, according to one guide, the
@@ -69,6 +77,41 @@ void event();
       cse4589_print_and_log("%-5d%-35s%-8d%-8d%-8s\n", list_id, hname, num_msg_sent, num_msg_rcv, status);
 	  }
 	  shell_end(cmd);
-	  
   }
+
+  void blocked(char *client_ip) {
+    char *cmd = "BLOCKED";
+	  int list_id, port_listen;
+	  char *hname, *ip_addr;
+
+    /* Iterate over clients in the block_lists until we find the one with the
+     * right ip. */
+    for (auto i = block_lists.begin(); i != block_lists.end(); ++i) {
+      blocked_by current_client = (*i);
+
+      if (current_client.ip == client_ip) {
+        shell_success(cmd);
+        current_client.blocked.sort(compareClient());
+
+        /* Iterate over the sorted list of clients that are blocked and print
+         * them with the same format as the list() command */
+	      int acc = 1;
+        for (auto it = current_client.blocked.begin(); it != current_client.blocked.end(); ++it) {
+          client blocked_client = (*it);
+
+		      list_id = acc;
+		      port_listen = blocked_client.listening_port;
+		      hname = blocked_client.hostname;
+		      ip_addr = blocked_client.ip;
+		      acc++;
+      	  cse4589_print_and_log("%-5d%-35s%-20s%-8d\n", list_id, hname, ip_addr, port_listen);
+        }
+
+        shell_end(cmd);
+      }
+
+    }
+
+  }
+
 };
