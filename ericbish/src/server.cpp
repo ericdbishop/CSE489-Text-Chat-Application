@@ -15,7 +15,8 @@ struct loggedClient: Client {
 };
 
 class Server: public Process {
-//Removed the public: because we should not need to redefine variables.
+  public:
+	std::list<client> logged_clients;
 
 void statistics();
 void blocked(char client_ip);

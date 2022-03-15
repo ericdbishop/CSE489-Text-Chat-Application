@@ -52,19 +52,26 @@ class Process {
   }
 
 /* SHELL commands */
-
-  void author() {
-	  char *cmd = "AUTHOR";
+  void output(char *cmd, char *format, char *input){
 	  shell_success(cmd);
-	  // I am assuming this should be ericbish since I generated the starter code.
-	  char *name = "ericbish";
-	  cse4589_print_and_log("I, %s, have read and understood the course academic policy.\n", name);
+	  cse4589_print_and_log(format, input);
+	  shell_end(cmd);
+  }
+  void output(char *cmd, char *format, int input){
+	  shell_success(cmd);
+	  cse4589_print_and_log(format, input);
 	  shell_end(cmd);
   }
 
-  void ip() { // uses code from section 6.3 of Beej's Guide to Network Programming
-	  char *cmd = "IP";
+  void author() {
+	  char *cmd = "AUTHOR";
+	  char *format = "I, %s, have read and understood the course academic policy.\n";
+	  char *name = "ericbish";
+	 
+	  output(cmd, format, name);
+  }
 
+  void ip() { // uses code from section 6.3 of Beej's Guide to Network Programming
 		/* We still need to have some error handling in here, from how the PA1
 		 * description is written. So we could maybe have a separate helper
 		 * function that we call once when a process begins, to gather its
@@ -72,6 +79,8 @@ class Process {
 		 * command is given we can call it again. The helper function will detect
 		 * errors and return -1 if something is wrong. */
 
+	  char *cmd = "IP";
+	  char *format = "IP:%s\n";
 		/* Will this prodcue issues if self has already been defined? */
       int result = makeClient(self);
 
@@ -79,18 +88,14 @@ class Process {
 		  shell_error;
 		  return;
 	  }
-
 	  // Print output
-	  shell_success(cmd);
-	  cse4589_print_and_log("IP:%s\n", self->ip);
-	  shell_end(cmd);
+	  output(cmd, format, self->ip);
   }
 
   void print_port() {
 	  char *cmd = "PORT";
-	  shell_success(cmd);
-      cse4589_print_and_log("PORT:%d\n", self->listening_port);
-	  shell_end(cmd);
+	  char *format = "PORT:%d\n";
+	  output(cmd, format, self->listening_port);
   }
 
   /* list() should  */
