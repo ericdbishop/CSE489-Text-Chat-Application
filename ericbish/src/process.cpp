@@ -28,6 +28,15 @@ struct client{
 	char hostname[128];
 };
 
+class compareClient {
+	public:
+	/* compareClient provides a sorting function for the connected_clients linked list */
+	inline bool operator()(const client one, const client two){ // Tutorials online added a & after the object type.
+		if (one.listening_port > two.listening_port) return false;
+		else return true;
+	}
+};
+
 class Process {
 	public:
      int port_listen;
@@ -47,65 +56,15 @@ class Process {
 	 * constructor. */
 
 	memset(&self, 0, sizeof(client));
-
 	self->listening_port = port;
+
+	/* Fill in the details for the self Client object and add it to the
+	 * connected_clients list. */
 	makeClient(self);
-	/*
-	char *cmd = "IP";
-    int sockfd, status;
-
-	// load up adress structs with getaddrinfo()
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_DGRAM;
-
-	if ((status = getaddrinfo("8.8.8.8", "53", &hints, &res)) != 0) {
-	 // Do we need the same error checking here if it is outside of the IP command?
-	 fprintf(stderr, "IP: getaddrinfo error: %s\n", gai_strerror(status));
-	 shell_error(cmd);
-	 return;
-	}
-
-	  // make a socket
-	if ((sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) == -1) {
-	 fprintf(stderr, "IP: socket error\n");
-	 shell_error(cmd);
-	 return;
-	}
-
-	// connect
-	if ((connect(sockfd, res->ai_addr, res->ai_addrlen)) == -1) {
-	 fprintf(stderr, "IP: connect error\n");
-	 shell_error(cmd);
-	 return;
-	}
-
-	// get my IP Address
-	struct sockaddr_in *myaddr;
-	memset(&myaddr, 0, sizeof(myaddr));
-	socklen_t len = sizeof(myaddr);
-	if ((getsockname(sockfd, (struct sockaddr *) &myaddr, &len)) == -1) {
-	 fprintf(stderr, "IP: getsockname error\n");
-	 shell_error(cmd);
-	 return;
-	}
-
-	if ((inet_ntop(AF_INET, &myaddr->sin_addr, ipstr, sizeof(ipstr))) == NULL ) {
-	 fprintf(stderr, "IP: inet_ntop error\n");
-	 shell_error(cmd);
-	 return;
-	}
-
-	// close UDP socket
-	if ((close(sockfd)) == -1) {
-	 fprintf(stderr, "IP: close error\n:");
-	 shell_error(cmd);
-	 return;
-	}
-
-	// This should make hostname equal to ai_canonname
-	std::strncpy(hostname, res->ai_canonname, sizeof(hostname));
-	 */
+	connected_clients.insert(connected_clients.begin(), *self);
+	// Sorting isn't neccesary here if it self is the only client in the list
+	// but for future reference this is how we sort:
+	// connected_clients.sort(compareClient());
   }
 
 /* SHELL commands */
