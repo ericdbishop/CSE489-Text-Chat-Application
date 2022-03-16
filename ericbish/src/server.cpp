@@ -8,10 +8,6 @@
 
 #include "process.cpp"
 
-#define STDIN 0
-#define CMD_SIZE 100
-#define BACKLOG 5
-#define BUFFER_SIZE 256
 
 /* logged_client struct contains statistics about each previously loggin in client. 
  * Maintain a list of logged clients for server so that it can call statistics().
@@ -43,8 +39,6 @@ struct blocked_by:client {
 
 class Server: public Process {
   public:
-  // listening_socket is the fd.
-  int listening_socket;
 	std::list<logged_client> logged_clients;
   std::list<blocked_by> block_lists;
 
@@ -66,7 +60,7 @@ void event(char *from_client_ip, char *to_client_ip, char *msg, bool broadcast);
    * with statistics such as their number of sent and received
    * messages, and whether they are logged in or out. */
   void statistics(){
-    logged_clients.sort(compareClient());
+    logged_clients.sort(client());
 
 	  int list_id, num_msg_sent, num_msg_rcv;
 	  char *hname, *status;
@@ -104,7 +98,7 @@ void event(char *from_client_ip, char *to_client_ip, char *msg, bool broadcast);
 
       if (current_client.ip == client_ip) {
         shell_success(cmd);
-        current_client.blocked.sort(compareClient());
+        current_client.blocked.sort(client());
 
         /* Iterate over the sorted list of clients that are blocked and print
          * them with the same format as the list() command */
@@ -138,134 +132,6 @@ void event(char *from_client_ip, char *to_client_ip, char *msg, bool broadcast);
 
   }
 
-  /* This helper function creates the socket we listen for new connections on,
-   * it should be called during initialization of the Server
-   *
-   * We might want to put this in process.cpp, since the client creates a
-   * listener socket as well
-   */
-  void create_listener() {
-    int head_socket, selret, sock_index, fdaccept=0, caddr_len;
-	  struct sockaddr_in client_addr;
-	  struct addrinfo hints, *res;
-	  fd_set master_list, watch_list;
 
-    /* Set up hints structure */
-    memset(&hints, 0, sizeof(hints));
-        hints.ai_family = AF_INET;
-        hints.ai_socktype = SOCK_STREAM;
-        hints.ai_flags = AI_PASSIVE;
-
-    /* Fill up address structures */
-    if (getaddrinfo(NULL, to_string(self->listening_port).c_str(), &hints, &res) != 0){
-      perror("getaddrinfo failed");
-    }
-    
-    /* Socket */
-    self->listening_socket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    if(self->listening_socket < 0){
-      perror("Cannot create socket");
-    }
-    
-    /* Bind */
-    if(bind(self->listening_socket, res->ai_addr, res->ai_addrlen) < 0 ){
-      perror("Bind failed");
-    }
-
-    freeaddrinfo(res);
-    
-    /* Listen */
-    if(listen(self->listening_socket, BACKLOG) < 0){
-      perror("Unable to listen on port");
-    }
-  }
-
-  int read_inputs() {
-    struct sockaddr_in client_addr;
-    fd_set readfds, master;
-    int fdaccept, caddr_len, fdmax = 0;
-
-    // clear the file descriptor sets
-    FD_ZERO(&readfds);
-    FD_ZERO(&master);
-
-    FD_SET(STDIN, &master); // add stdin to the file descriptor set
-
-    while(true) {
-      readfds = master;
-      if(select(fdmax+1, &readfds, NULL, NULL, NULL) == -1) {
-        fprintf(stderr, "select error\n");
-        // the code in the book makes a call to exit(4)
-        // not sure if this is how we should handle the error though
-      }
-      for (int i = 0; i <= fdmax; i++) {
-        if (FD_ISSET(i, &readfds)) { // found a file descriptor
-          if (i == STDIN) {
-            // HANDLE SHELL COMMANDS
-
-            // first we read the command from the command line
-            char *command = (char *)malloc(sizeof(char)*CMD_SIZE);
-            memset(command, '\0', CMD_SIZE);
-            if (fgets(command, CMD_SIZE-1, stdin) == NULL) {
-              exit(-1);
-            }
-
-            // now we call the corresponding helper functions for each command
-            if (strcmp(command, "AUTHOR") == 0) {
-              program.author();
-            }
-            if (strcmp(command, "PORT") == 0) {
-              program.port();
-            }
-            if (strcmp(command, "LIST") == 0) {
-              program.list();
-            }
-            //... maybe move this somewhere so we can handle client commands too
-            // or if the client needs to listen for connections from the server,
-            // it can be moved back to 
-          }
-          else if (i == self->listening_socket) { // listener is the servers listening socket fd, I need to figure out how to store this in a variable
-            // accept new connections and add them to master set
-            caddr_len = sizeof(client_addr);
-						fdaccept = accept(self->listening_socket, (struct sockaddr *)&client_addr, &caddr_len);
-						if(fdaccept < 0)
-							perror("Accept failed.");
-						
-						printf("\nRemote Host connected!\n");                        
-						
-						/* Add to watched socket list */
-						FD_SET(fdaccept, &master);
-						if(fdaccept > fdmax) fdmax = fdaccept;
-          }
-          else {
-            // handle data from a client
-            /* Initialize buffer to receieve response */
-						char *buffer = (char*) malloc(sizeof(char)*BUFFER_SIZE);
-						memset(buffer, '\0', BUFFER_SIZE);
-						
-						if(recv(i, buffer, BUFFER_SIZE, 0) <= 0){
-							close(i);
-							printf("Remote Host terminated connection!\n");
-							
-							/* Remove from watched list */
-							FD_CLR(i, &master);
-						}
-						else {
-							//Process incoming data from existing clients here ...
-							
-							printf("\nClient sent me: %s\n", buffer);
-							printf("ECHOing it back to the remote host ... ");
-              // I'm pretty sure we don't want to use fdaccept when sending information to the clients
-							if(send(fdaccept, buffer, strlen(buffer), 0) == strlen(buffer))
-								printf("Done!\n");
-							fflush(stdout);
-						}
-						
-						free(buffer);
-          }
-        }
-      }
-    }
-  }
 
 };

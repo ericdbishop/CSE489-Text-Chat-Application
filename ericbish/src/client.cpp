@@ -24,7 +24,7 @@ public:
   void msg_received(char *client_ip, char *msg);
   bool isBlocked(char *client_ip);
 
-/* I think the following line of code is redundant, according to one guide, the
+/* I think the following line of code is redundant, the
  * parent constructor of Process will be called automatically */
 //using Process::Process;
 
@@ -127,9 +127,15 @@ public:
         HELPER FUNCTIONS
   ***************************/
 
+  /* isBlocked returns true if a client with client_ip is blocked, and returns
+   * false otherwise */
   bool isBlocked(char *client_ip){
-    auto it = std::find(blocked_clients.begin(), blocked_clients.end(), client_ip);
+    for (auto it = blocked_clients.begin(); it != blocked_clients.end(); ++it) {
+      client blocked_client = (*it);
 
+		  if (blocked_client.ip == client_ip) return true;
+    }
+    return false;
   }
 
 };
