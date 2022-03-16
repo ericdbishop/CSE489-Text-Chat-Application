@@ -43,6 +43,8 @@ struct blocked_by:client {
 
 class Server: public Process {
   public:
+  // listening_socket is the fd.
+  int listening_socket;
 	std::list<logged_client> logged_clients;
   std::list<blocked_by> block_lists;
 
