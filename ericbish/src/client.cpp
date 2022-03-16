@@ -36,6 +36,23 @@ public:
 	  // but for future reference this is how we sort:
 	  // connected_clients.sort(compareClient());
   }
+  
+  int call_command(char *command){
+    if (Process::call_command(command) == 0) return 0;
+
+    //Need to split the command up to separate the command from its arguments
+    if (strcmp(command, "LOGIN") == 0) login();
+    else if (strcmp(command, "REFRESH") == 0) refresh();
+    else if (strcmp(command, "REFRESH") == 0) refresh();
+    else if (strcmp(command, "SEND") == 0) refresh();
+    else if (strcmp(command, "BROADCAST") == 0) refresh();
+    else if (strcmp(command, "BLOCK") == 0) refresh();
+    else if (strcmp(command, "UNBLOCK") == 0) refresh();
+    else if (strcmp(command, "LOGOUT") == 0) refresh();
+	  else return -1;
+
+	  return 0;
+  }
 
   void require_login(char *cmd){
     if (!logged_in){

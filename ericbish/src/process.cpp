@@ -48,6 +48,7 @@ class Process {
 
   void create_listener(); 
   int read_inputs(); 
+  int call_command(char *command);
 
   Process (int port) {
 	memset(&self, 0, sizeof(client));
@@ -99,10 +100,13 @@ class Process {
     }
   }
 
+  /* read_inputs() is responsible for calling all other functions and will run so
+   * long as the program is running  */
   int read_inputs(){
     struct sockaddr_in client_addr;
     fd_set readfds, master;
-    int fdaccept, caddr_len, fdmax = 0;
+	socklen_t caddr_len;
+    int fdaccept, fdmax = 0;
 
     // clear the file descriptor sets
     FD_ZERO(&readfds);
@@ -130,18 +134,7 @@ class Process {
             }
 
             // now we call the corresponding helper functions for each command
-            if (strcmp(command, "AUTHOR") == 0) {
-              author();
-            }
-            if (strcmp(command, "PORT") == 0) {
-              port();
-            }
-            if (strcmp(command, "LIST") == 0) {
-              list();
-            }
-            //... maybe move this somewhere so we can handle client commands too
-            // or if the client needs to listen for connections from the server,
-            // it can be moved back to 
+			call_command(command);
           }
           else if (i == listening_socket) { // listener is the servers listening socket fd, 
                                             // I need to figure out how to store this in a variable
@@ -186,6 +179,17 @@ class Process {
         }
       }
     }
+  }
+
+  // call_command determines which function to call based on its input string
+  int call_command(char *command){
+    if (strcmp(command, "AUTHOR") == 0) author();
+    else if (strcmp(command, "IP") == 0) ip();
+    else if (strcmp(command, "PORT") == 0) port();
+    else if (strcmp(command, "LIST") == 0) list();
+	else return -1;
+
+	return 0;
   }
 
 /* SHELL commands */

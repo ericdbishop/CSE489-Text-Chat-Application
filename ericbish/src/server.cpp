@@ -55,6 +55,16 @@ void event(char *from_client_ip, char *to_client_ip, char *msg, bool broadcast);
     // Server constructor
   }
 
+  int call_command(char *command){
+    if (Process::call_command(command) == 0) return 0;
+
+    if (strcmp(command, "STATISTICS") == 0) statistics();
+    else if (strcmp(command, "BLOCKED") == 0) blocked();
+	  else return -1;
+
+	  return 0;
+  }
+
   /* statistics displays a numbered list of clients who are or have previously
    * logged in to the server, who have not used the EXIT command, 
    * with statistics such as their number of sent and received
