@@ -42,12 +42,7 @@
 #include "client.cpp"
 #include "server.cpp"
 
-
 using namespace std;
-
-#define SERVER true
-#define CLIENT false
-bool program_mode; // stores whether the program is in server or client mode
 
 /**
  * main function
@@ -58,7 +53,6 @@ bool program_mode; // stores whether the program is in server or client mode
  */
 int main(int argc, char **argv)
 {
-
 	/*Init. Logger*/
 	cse4589_init_log(argv[2]);
 
@@ -84,53 +78,13 @@ int main(int argc, char **argv)
 
 	/* Create the client/server object */
 	if (argv[1] == "s") {
-		program_mode = SERVER;
 		Server program = Server(atoi(argv[2]));
 		program.read_inputs();
 	}
 	else if (argv[1] == "c") {
-		program_mode = CLIENT;
 		Client program = Client(atoi(argv[2]));
 		program.read_inputs();
 	}
 	return 0;
-
-	/*
-		The rest of this file should handle reading any further inputs from the
-		user and feeding them into the object for the Client or Server object.
-	*/
-
-	//fd_set readfds, master;
-	//int fdmax;
-
-	//// clear the file descriptor sets
-	//FD_ZERO(&readfds);
-	//FD_ZERO(&master);
-
-	///* identifier STDIN is undefined. */
-	//FD_SET(STDIN, &master); // add stdin to the file descriptor set
-
-	//while(true) {
-	//	readfds = master;
-	//	if(select(fdmax+1, &readfds, NULL, NULL, NULL) == -1) {
-	//		fprintf(stderr, "select error\n");
-	//		// the code in the book makes a call to exit(4)
-	//		// not sure if this is how we should handle the error though
-	//	}
-	//	for (int i = 0; i <= fdmax; i++) {
-	//		if (FD_ISSET(i, &readfds)) { // found a file descriptor
-	//			if (i == STDIN) {
-	//				// HANDLE SHELL COMMANDS
-	//			}
-	//			/* listener is undefined */
-	//			else if (i == listener && program_mode == SERVER) { // listener is the servers listening socket fd, I need to figure out how to store this in a variable
-	//				// accept new connections and add them to master set
-	//			}
-	//			else {
-	//				// handle data from a client
-	//			}
-	//		}
-	//	}
-	//}
 }
 
