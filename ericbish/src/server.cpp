@@ -9,8 +9,9 @@
 #include "process.cpp"
 
 #define STDIN 0
-#define MSG_SIZE 256
+#define CMD_SIZE 100
 #define BACKLOG 5
+#define BUFFER_SIZE 256
 
 /* logged_client struct contains statistics about each previously loggin in client. 
  * Maintain a list of logged clients for server so that it can call statistics().
@@ -137,9 +138,12 @@ void event(char *from_client_ip, char *to_client_ip, char *msg, bool broadcast);
 
   /* This helper function creates the socket we listen for new connections on,
    * it should be called during initialization of the Server
+   *
+   * We might want to put this in process.cpp, since the client creates a
+   * listener socket as well
    */
-  int create_listener() {
-    int server_socket, head_socket, selret, sock_index, fdaccept=0, caddr_len;
+  void create_listener() {
+    int head_socket, selret, sock_index, fdaccept=0, caddr_len;
 	  struct sockaddr_in client_addr;
 	  struct addrinfo hints, *res;
 	  fd_set master_list, watch_list;
@@ -156,27 +160,28 @@ void event(char *from_client_ip, char *to_client_ip, char *msg, bool broadcast);
     }
     
     /* Socket */
-    server_socket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    if(server_socket < 0){
+    self->listening_socket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    if(self->listening_socket < 0){
       perror("Cannot create socket");
     }
     
     /* Bind */
-    if(bind(server_socket, res->ai_addr, res->ai_addrlen) < 0 ){
+    if(bind(self->listening_socket, res->ai_addr, res->ai_addrlen) < 0 ){
       perror("Bind failed");
     }
 
     freeaddrinfo(res);
     
     /* Listen */
-    if(listen(server_socket, BACKLOG) < 0){
+    if(listen(self->listening_socket, BACKLOG) < 0){
       perror("Unable to listen on port");
     }
   }
 
   int read_inputs() {
+    struct sockaddr_in client_addr;
     fd_set readfds, master;
-    int fdmax = 0;
+    int fdaccept, caddr_len, fdmax = 0;
 
     // clear the file descriptor sets
     FD_ZERO(&readfds);
@@ -197,26 +202,64 @@ void event(char *from_client_ip, char *to_client_ip, char *msg, bool broadcast);
             // HANDLE SHELL COMMANDS
 
             // first we read the command from the command line
-            char *command = (char *)malloc(sizeof(char)*MSG_SIZE);
-            memset(command, '\0', MSG_SIZE);
-            if (fgets(command, MSG_SIZE-1, stdin) == NULL) {
+            char *command = (char *)malloc(sizeof(char)*CMD_SIZE);
+            memset(command, '\0', CMD_SIZE);
+            if (fgets(command, CMD_SIZE-1, stdin) == NULL) {
               exit(-1);
             }
 
-            // now we call the corresponding helper functions
+            // now we call the corresponding helper functions for each command
             if (strcmp(command, "AUTHOR") == 0) {
               program.author();
             }
             if (strcmp(command, "PORT") == 0) {
-              program.print_port();
+              program.port();
+            }
+            if (strcmp(command, "LIST") == 0) {
+              program.list();
             }
             //... maybe move this somewhere so we can handle client commands too
+            // or if the client needs to listen for connections from the server,
+            // it can be moved back to 
           }
-          else if (i == listener) { // listener is the servers listening socket fd, I need to figure out how to store this in a variable
+          else if (i == self->listening_socket) { // listener is the servers listening socket fd, I need to figure out how to store this in a variable
             // accept new connections and add them to master set
+            caddr_len = sizeof(client_addr);
+						fdaccept = accept(self->listening_socket, (struct sockaddr *)&client_addr, &caddr_len);
+						if(fdaccept < 0)
+							perror("Accept failed.");
+						
+						printf("\nRemote Host connected!\n");                        
+						
+						/* Add to watched socket list */
+						FD_SET(fdaccept, &master);
+						if(fdaccept > fdmax) fdmax = fdaccept;
           }
           else {
             // handle data from a client
+            /* Initialize buffer to receieve response */
+						char *buffer = (char*) malloc(sizeof(char)*BUFFER_SIZE);
+						memset(buffer, '\0', BUFFER_SIZE);
+						
+						if(recv(i, buffer, BUFFER_SIZE, 0) <= 0){
+							close(i);
+							printf("Remote Host terminated connection!\n");
+							
+							/* Remove from watched list */
+							FD_CLR(i, &master);
+						}
+						else {
+							//Process incoming data from existing clients here ...
+							
+							printf("\nClient sent me: %s\n", buffer);
+							printf("ECHOing it back to the remote host ... ");
+              // I'm pretty sure we don't want to use fdaccept when sending information to the clients
+							if(send(fdaccept, buffer, strlen(buffer), 0) == strlen(buffer))
+								printf("Done!\n");
+							fflush(stdout);
+						}
+						
+						free(buffer);
           }
         }
       }
