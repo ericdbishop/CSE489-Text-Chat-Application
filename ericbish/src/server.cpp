@@ -74,7 +74,7 @@ void event(char *from_client_ip, char *to_client_ip, char *msg, bool broadcast);
         char client_ip[arguments.size() + 1];
 
         arguments.copy(client_ip, arguments.length() + 1);
-        client_ip[cmd_and_arguments.substr(8).length()] = '\0';
+        client_ip[arguments.length()] = '\0';
         //Check if the IP is valid
         if (!is_valid_ip(client_ip)) {
           // error

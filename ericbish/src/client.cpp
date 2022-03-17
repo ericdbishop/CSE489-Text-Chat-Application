@@ -8,6 +8,8 @@
 
 class Client: public Process {
 public:
+  char *server_ip;
+  char *server_port;
   int port_listen;
   bool logged_in = false;
   std::list<client> blocked_clients;
@@ -37,6 +39,7 @@ public:
 	  // connected_clients.sort(compareClient());
   }
   
+  // call_command will add a \0 to the end of each input string.
   int call_command(char *command){
     if (Process::call_command(command) == 0) return 0;
 
@@ -55,45 +58,62 @@ public:
       perror("Command is too short to have valid arguments");
     }
 
-    cmd = cmd_and_arguments.substr(0,4);
-    if (cmd.compare("SEND") == 0) {
+    if (cmd_and_arguments.find("SEND") != std::string::npos) {
+      cmd = cmd_and_arguments.substr(0,4);
       // Arguments here will be both arguments separated by a space.
-      string arguments = cmd_and_arguments.substr(8);
-      char *client_ip[arguments.size() + 1];
-      char *msg[arguments.size() + 1];
+      string arguments = cmd_and_arguments.substr(5);
+      string ip = arguments.substr(0,arguments.find(" "));
+      string message = arguments.substr(arguments.find(" ")+1);
+
+      char client_ip[ip.size() + 1];
+      char msg[message.size() + 1];
       
-      //I will fill this in after finishing the LOGIN command.
+      ip.copy(client_ip, ip.length() + 1);
+      client_ip[ip.length()] = '\0';
 
-      send();
-    }
-
-    cmd = cmd_and_arguments.substr(0,5);
-    if (cmd.compare("LOGIN") == 0) {
-      string arguments = cmd_and_arguments.substr(8);
-      // Arguments here will be both arguments separated by a space.
-      // Split arguments so we can separate the ip and port
-      char server_ip[arguments.size() + 1];
-      char server_port[arguments.size() + 1];
-
-      // Needs to be changed
-      arguments.copy(server_ip, arguments.length() + 1);
-      server_ip[cmd_and_arguments.substr(8).length()] = '\0';
+      message.copy(msg, message.length() + 1);
+      msg[message.length()] = '\0';
 
       //Check if the IP is valid
-      if (!is_valid_ip(server_ip)) {
+      if (!is_valid_ip(client_ip)) {
         // error
         perror("Invalid IP");
       }
 
+      send(client_ip, msg);
+    }
+    else if (cmd_and_arguments.find("LOGIN") != std::string::npos) {
+      cmd = cmd_and_arguments.substr(0,5);
+      string arguments = cmd_and_arguments.substr(6);
+      string ip = arguments.substr(0,arguments.find(" "));
+      string port = arguments.substr(arguments.find(" ")+1);
+      // Arguments here will be both arguments separated by a space.
+      // Split arguments so we can separate the ip and port
+      char s_ip[ip.size() + 1];
+      char s_port[port.size() + 1];
+
+      ip.copy(s_ip, ip.length() + 1);
+      s_ip[ip.length()] = '\0';
+
+      port.copy(s_port, port.length() + 1);
+      s_port[port.length()] = '\0';
+
+      //Check if the server IP and port is correct
+      if (strcmp(s_ip, server_ip) != 0) {
+        perror("Invalid IP");
+      } else if (strcmp(s_port, server_port) != 0) {
+        perror("Invalid port");
+      }
+
       login(server_ip, server_port);
     }
-
-    else if (cmd.compare("BLOCK") == 0) {
-      string arguments = cmd_and_arguments.substr(8);
+    else if (cmd_and_arguments.find("BLOCK") != std::string::npos) {
+      cmd = cmd_and_arguments.substr(0,5);
+      string arguments = cmd_and_arguments.substr(6);
       char client_ip[arguments.size() + 1];
 
       arguments.copy(client_ip, arguments.length() + 1);
-      client_ip[cmd_and_arguments.substr(8).length()] = '\0';
+      client_ip[arguments.length()] = '\0';
 
       //Check if the IP is valid
       if (!is_valid_ip(client_ip)) {
@@ -103,11 +123,13 @@ public:
 
       block(client_ip);
     }
-
-    cmd = cmd_and_arguments.substr(0,7);
-    if (cmd.compare("UNBLOCK") == 0) {
+    else if (cmd_and_arguments.find("UNBLOCK") != std::string::npos) {
+      cmd = cmd_and_arguments.substr(0,7);
       string arguments = cmd_and_arguments.substr(8);
       char client_ip[arguments.size() + 1];
+
+      arguments.copy(client_ip, arguments.length() + 1);
+      client_ip[arguments.length()] = '\0';
 
       //Check if the IP is valid
       if (!is_valid_ip(client_ip)) {
@@ -117,11 +139,13 @@ public:
 
       unblock(client_ip);
     }
-
-    cmd = cmd_and_arguments.substr(0,9);
-    if (cmd.compare("BROADCAST") == 0) {
-      string arguments = cmd_and_arguments.substr(8);
+    else if (cmd_and_arguments.find("BROADCAST") != std::string::npos) {
+      cmd = cmd_and_arguments.substr(0,9);
+      string arguments = cmd_and_arguments.substr(10);
       char msg[arguments.size() + 1];
+
+      arguments.copy(msg, arguments.length() + 1);
+      msg[arguments.length()] = '\0';
 
       broadcast(msg);
     }
