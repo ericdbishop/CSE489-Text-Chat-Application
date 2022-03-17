@@ -58,8 +58,16 @@ void event(char *from_client_ip, char *to_client_ip, char *msg, bool broadcast);
   int call_command(char *command){
     if (Process::call_command(command) == 0) return 0;
 
+    //Need to split the command up to separate the command from its arguments
+		string cmd_and_arguments = std::string(command);
+    size_t cmd_length = cmd_and_arguments.length();
+    string cmd; 
     if (strcmp(command, "STATISTICS") == 0) statistics();
-    else if (strcmp(command, "BLOCKED") == 0) blocked();
+    else if (cmd_length > 7) {
+      cmd = cmd.substr(0,7);
+      if (cmd.compare("BLOCKED") == 0)
+        blocked();
+    }
 	  else return -1;
 
 	  return 0;
