@@ -40,17 +40,92 @@ public:
   int call_command(char *command){
     if (Process::call_command(command) == 0) return 0;
 
-		string cmd = std::string(command);
-    //Need to split the command up to separate the command from its arguments
-    if (strcmp(command, "LOGIN") == 0) login();
-    else if (strcmp(command, "REFRESH") == 0) refresh();
-    else if (strcmp(command, "REFRESH") == 0) refresh();
-    else if (strcmp(command, "SEND") == 0) refresh();
-    else if (strcmp(command, "BROADCAST") == 0) refresh();
-    else if (strcmp(command, "BLOCK") == 0) refresh();
-    else if (strcmp(command, "UNBLOCK") == 0) refresh();
-    else if (strcmp(command, "LOGOUT") == 0) refresh();
-	  else return -1;
+		string cmd_and_arguments = std::string(command);
+    size_t cmd_length = cmd_and_arguments.length();
+    string cmd, arguments; 
+
+    if (strcmp(command, "REFRESH") == 0)
+      refresh();
+    else if (strcmp(command, "LOGOUT") == 0)
+      logout();
+    else if (strcmp(command, "EXIT") == 0)
+      exit();
+    
+    if (cmd_and_arguments.length() < 10){
+      perror("Command is too short to have valid arguments");
+    }
+
+    cmd = cmd_and_arguments.substr(0,4);
+    if (cmd.compare("SEND") == 0) {
+      // Arguments here will be both arguments separated by a space.
+      string arguments = cmd_and_arguments.substr(8);
+      char *client_ip[arguments.size() + 1];
+      char *msg[arguments.size() + 1];
+      
+      //I will fill this in after finishing the LOGIN command.
+
+      send();
+    }
+
+    cmd = cmd_and_arguments.substr(0,5);
+    if (cmd.compare("LOGIN") == 0) {
+      string arguments = cmd_and_arguments.substr(8);
+      // Arguments here will be both arguments separated by a space.
+      // Split arguments so we can separate the ip and port
+      char server_ip[arguments.size() + 1];
+      char server_port[arguments.size() + 1];
+
+      // Needs to be changed
+      arguments.copy(server_ip, arguments.length() + 1);
+      server_ip[cmd_and_arguments.substr(8).length()] = '\0';
+
+      //Check if the IP is valid
+      if (!is_valid_ip(server_ip)) {
+        // error
+        perror("Invalid IP");
+      }
+
+      login(server_ip, server_port);
+    }
+
+    else if (cmd.compare("BLOCK") == 0) {
+      string arguments = cmd_and_arguments.substr(8);
+      char client_ip[arguments.size() + 1];
+
+      arguments.copy(client_ip, arguments.length() + 1);
+      client_ip[cmd_and_arguments.substr(8).length()] = '\0';
+
+      //Check if the IP is valid
+      if (!is_valid_ip(client_ip)) {
+        // error
+        perror("Invalid IP");
+      }
+
+      block(client_ip);
+    }
+
+    cmd = cmd_and_arguments.substr(0,7);
+    if (cmd.compare("UNBLOCK") == 0) {
+      string arguments = cmd_and_arguments.substr(8);
+      char client_ip[arguments.size() + 1];
+
+      //Check if the IP is valid
+      if (!is_valid_ip(client_ip)) {
+        // error
+        perror("Invalid IP");
+      }
+
+      unblock(client_ip);
+    }
+
+    cmd = cmd_and_arguments.substr(0,9);
+    if (cmd.compare("BROADCAST") == 0) {
+      string arguments = cmd_and_arguments.substr(8);
+      char msg[arguments.size() + 1];
+
+      broadcast(msg);
+    }
+	  return -1;
 
 	  return 0;
   }
