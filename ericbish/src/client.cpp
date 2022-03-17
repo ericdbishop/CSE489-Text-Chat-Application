@@ -40,6 +40,7 @@ public:
   int call_command(char *command){
     if (Process::call_command(command) == 0) return 0;
 
+		string cmd = std::string(command);
     //Need to split the command up to separate the command from its arguments
     if (strcmp(command, "LOGIN") == 0) login();
     else if (strcmp(command, "REFRESH") == 0) refresh();
