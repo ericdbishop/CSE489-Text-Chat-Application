@@ -187,6 +187,11 @@ public:
 		cse4589_print_and_log(format, input);
 		shell_end(cmd);
 	}
+	void output_error(char *cmd)
+	{
+		shell_error(cmd);
+		shell_end(cmd);
+	}
 
 	void author()
 	{
