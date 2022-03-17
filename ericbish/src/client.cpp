@@ -10,21 +10,22 @@ class Client: public Process {
 public:
   char *server_ip;
   char *server_port;
+  int server_socket; // this is generated with LOGIN
   int port_listen;
   bool logged_in = false;
   std::list<client> blocked_clients;
 
-  //void login(char *server_ip, char *server_port);
-  //void refresh();
-  //void send(char *client_ip, char *msg);
-  //void broadcast(char *msg);
-  //void block(char *client_ip);
-  //void unblock(char *client_ip);
-  //void logout();
-  //void exit();
+  void login(char *server_ip, char *server_port);
+  void refresh();
+  void send(char *client_ip, char *msg);
+  void broadcast(char *msg);
+  void block(char *client_ip);
+  void unblock(char *client_ip);
+  void logout();
+  void exit();
   // msgReceived will handle incoming messages and print/log them
-  //void msg_received(char *client_ip, char *msg);
-  //bool isBlocked(char *client_ip);
+  void msg_received(char *client_ip, char *msg);
+  bool isBlocked(char *client_ip);
 
 /* I think the following line of code is redundant, the
  * parent constructor of Process will be called automatically */
@@ -154,6 +155,36 @@ public:
 	  return 0;
   }
 
+// helper function for LOGIN command - taken from client.c
+int connect_to_host(char *server_ip, char* server_port)
+{
+	int fdsocket;
+	struct addrinfo hints, *res;
+
+	/* Set up hints structure */	
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+
+	/* Fill up address structures */	
+	if (getaddrinfo(server_ip, server_port, &hints, &res) != 0)
+		perror("getaddrinfo failed");
+
+	/* Socket */
+	fdsocket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+	if(fdsocket < 0)
+		perror("Failed to create socket");
+	
+	/* Connect */
+	if(connect(fdsocket, res->ai_addr, res->ai_addrlen) < 0)
+		perror("Connect failed");
+	
+	freeaddrinfo(res);
+
+	return fdsocket;
+}
+
+
   void require_login(char *cmd){
     if (!logged_in){
       shell_error(cmd);
@@ -170,35 +201,42 @@ public:
   /* Overload list() command to ensure that the client is logged in, and then
    * call parent function. */
   void list() {
-    char *cmd = (char *)"LIST";
+    char *cmd = "LIST";
     require_login(cmd);
     Process::list();
   }
 
   void login(char *server_ip, char *server_port){
-    char *cmd = (char *)"LOGIN";
-    
+    char *cmd = "LOGIN";
+    server_socket = connect_to_host(server_ip, server_port);
+    if (server_socket < 0) {
+      output_error(cmd);
+    }
+
+    // now we can use server_socket to send and receive data
+
+    // on login the server should send the client the list of currently connected clients
   }
 
   /* Retrieve an updated list of loggin in clients from the server and use it to update connected_clients */
   void refresh(){
-    char *cmd = (char *)"REFRESH";
+    char *cmd = "REFRESH";
     require_login(cmd);
   }
   
   void send(char *client_ip, char *msg){
-    char *cmd = (char *)"SEND";
+    char *cmd = "SEND";
     require_login(cmd);
   }
   
   void broadcast(char *msg){
-    char *cmd = (char *)"BROADCAST";
+    char *cmd = "BROADCAST";
     require_login(cmd);
   
   }
   
   void block(char *client_ip){
-    char *cmd = (char *)"BLOCK";
+    char *cmd = "BLOCK";
     require_login(cmd);
 
     if (isBlocked(client_ip)){
@@ -211,7 +249,7 @@ public:
   }
   
   void unblock(char *client_ip){
-    char *cmd = (char *)"UNBLOCK";
+    char *cmd = "UNBLOCK";
     require_login(cmd);
   
     /* TO DO: NOTIFY SERVER */
@@ -220,20 +258,20 @@ public:
   }
   
   void logout(){
-    char *cmd = (char *)"LOGOUT";
+    char *cmd = "LOGOUT";
     require_login(cmd);
   
   }
   
   void exit(){
-    char *cmd = (char *)"EXIT";
+    char *cmd = "EXIT";
   
   }
   
   // msgReceived will handle incoming messages and print/log them
   void msg_received(char *client_ip, char *msg){
-	  char *format = (char *)"msg from:%s\n[msg]:%s\n";
-    char *cmd = (char *)"RECEIVED";
+	  char *format = "msg from:%s\n[msg]:%s\n";
+    char *cmd = "RECEIVED";
 
     shell_success(cmd);
     cse4589_print_and_log(format, client_ip, msg);
