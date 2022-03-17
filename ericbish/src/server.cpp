@@ -62,11 +62,21 @@ void event(char *from_client_ip, char *to_client_ip, char *msg, bool broadcast);
 		string cmd_and_arguments = std::string(command);
     size_t cmd_length = cmd_and_arguments.length();
     string cmd; 
-    if (strcmp(command, "STATISTICS") == 0) statistics();
-    else if (cmd_length > 7) {
+
+    if (strcmp(command, "STATISTICS") == 0) 
+      statistics();
+    else if (cmd_length > 8) {
+
+      char *client_ip;
       cmd = cmd.substr(0,7);
+      // Used to understand converting string type to a char *::w
+      // https://www.tutorialspoint.com/how-to-convert-string-to-char-array-in-cplusplus 
       if (cmd.compare("BLOCKED") == 0)
-        blocked();
+        char *client_ip[cmd.substr(8).size() + 1];
+        cmd.copy(client_ip, cmd.substr(8).length() + 1);
+        client_ip[cmd.length()] = '\0';
+        //Check if the IP is valid!!!!!!!
+        blocked(client_ip);
     }
 	  else return -1;
 
