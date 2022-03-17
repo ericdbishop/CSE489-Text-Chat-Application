@@ -110,7 +110,7 @@ void event(char *from_client_ip, char *to_client_ip, char *msg, bool broadcast);
 
 	  int list_id, num_msg_sent, num_msg_rcv;
 	  char *hname, *status;
-	  char *cmd = "STATISTICS";
+	  char *cmd = (char *)"STATISTICS";
 
 	  shell_success(cmd);
 	  int acc = 1;
@@ -133,7 +133,7 @@ void event(char *from_client_ip, char *to_client_ip, char *msg, bool broadcast);
    * output is formatted the same as the list() command and sorted by ascending
    * port numbers. */
   void blocked(char *client_ip) {
-    char *cmd = "BLOCKED";
+    char *cmd = (char *)"BLOCKED";
 	  int list_id, port_listen;
 	  char *hname, *ip_addr;
 
@@ -169,8 +169,8 @@ void event(char *from_client_ip, char *to_client_ip, char *msg, bool broadcast);
    * which is routed through the server. In the case of a broadcast message,
    * the to_client_ip should be 255.255.255.255 */
   void event(char *from_client_ip, char *to_client_ip, char *msg) {
-	  char *format = "%-5d%-35s%-8d%-8d%-8s\n";
-    char *cmd = "RELAYED";
+	  char *format = (char *)"%-5d%-35s%-8d%-8d%-8s\n";
+    char *cmd = (char *)"RELAYED";
 
     shell_success(cmd);
     cse4589_print_and_log(format, from_client_ip, to_client_ip, msg);

@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include "../include/global.h"
 #include "../include/logger.h"
+#include "../include/process.h"
 
 #include <list>
 
@@ -20,30 +21,11 @@ using namespace std;
 #define BACKLOG 5
 #define BUFFER_SIZE 256
 
-void shell_success(char *command_str);
-void shell_end(char *command_str);
-void shell_error(char *command_str);
-int makeClient(client *newClient);
 
 /* Create a instance of the client struct for each client that connects. Maintain
  * a list of connected clients for all processes so that they can call list().
  * We should actively maintain the correct order of clients so it goes from
  * smallest to largest port number */
-struct client
-{
-	int listening_port;
-	int listening_socket;
-	char *ip;
-	char hostname[128];
-	/* compareClient provides a sorting function for the connected_clients linked list */
-	bool operator()(const client one, const client two)
-	{
-		if (one.listening_port > two.listening_port)
-			return false;
-		else
-			return true;
-	}
-};
 
 class Process
 {
@@ -54,9 +36,9 @@ public:
 	int listening_socket;
 	std::list<client> connected_clients;
 
-	int read_inputs();
-	int call_command(char *command);
-	bool is_valid_ip(char *client_ip);
+	//int read_inputs();
+	//int call_command(char *command);
+	//bool is_valid_ip(char *client_ip);
 
 	Process(int port)
 	{
@@ -208,9 +190,9 @@ public:
 
 	void author()
 	{
-		char *cmd = "AUTHOR";
-		char *format = "I, %s, have read and understood the course academic policy.\n";
-		char *name = "ericbish";
+		char *cmd = (char *)"AUTHOR";
+		char *format = (char *)"I, %s, have read and understood the course academic policy.\n";
+		char *name = (char *)"ericbish";
 
 		output(cmd, format, name);
 	}
@@ -224,8 +206,8 @@ public:
 		 * command is given we can call it again. The helper function will detect
 		 * errors and return -1 if something is wrong. */
 
-		char *cmd = "IP";
-		char *format = "IP:%s\n";
+		char *cmd = (char *)"IP";
+		char *format = (char *)"IP:%s\n";
 		/* Will this prodcue issues if self has already been defined? */
 		int result = makeClient(self);
 
@@ -240,8 +222,8 @@ public:
 
 	void port()
 	{
-		char *cmd = "PORT";
-		char *format = "PORT:%d\n";
+		char *cmd = (char *)"PORT";
+		char *format = (char *)"PORT:%d\n";
 		output(cmd, format, self->listening_port);
 	}
 
@@ -251,7 +233,7 @@ public:
 		int list_id, port_listen;
 		char *hname, *ip_addr;
 
-		char *cmd = "LIST";
+		char *cmd = (char *)"LIST";
 		shell_success(cmd);
 		int acc = 1;
 		for (auto i = connected_clients.begin(); i != connected_clients.end(); ++i)
@@ -317,7 +299,7 @@ void create_listener(client *newClient) {
 int makeClient(client *newClient)
 {
 
-	char *cmd = "IP";
+	char *cmd = (char *)"IP";
 	char ipstr[INET_ADDRSTRLEN]; // maybe INET_ADDR6STRLEN idk?? needs testing
 	struct addrinfo hints, *res;
 	int sockfd, status;
