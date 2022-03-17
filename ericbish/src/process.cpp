@@ -145,7 +145,8 @@ int Process::call_command(char *command)
  * given IP is only valid if it belongs to a logged-in client.  */
 bool Process::is_valid_ip(char *client_ip){
 	int acc = 1;
-	for (auto i = connected_clients.begin(); i != connected_clients.end(); ++i)
+	std::list<client>::iterator i;
+	for (i = connected_clients.begin(); i != connected_clients.end(); ++i)
 	{
 		// retrieve info for the next client in ascending port number order.
 		client currentClient = (*i);
@@ -222,7 +223,8 @@ void Process::list()
 	char *cmd = (char *)"LIST";
 	shell_success(cmd);
 	int acc = 1;
-	for (auto i = connected_clients.begin(); i != connected_clients.end(); ++i)
+    std::list<client>::iterator i;
+	for (i = connected_clients.begin(); i != connected_clients.end(); ++i)
 	{
 		// retrieve info for the next client in ascending port number order.
 		client currentClient = (*i);

@@ -74,7 +74,8 @@ int Server::call_command(char *command){
  * clients who are logged out and who are logged in. */
 bool Server::is_valid_ip(char *client_ip){
   int acc = 1;
-  for (auto i = logged_clients.begin(); i != logged_clients.end(); ++i)
+  std::list<logged_client>::iterator i;
+  for (i = logged_clients.begin(); i != logged_clients.end(); ++i)
   {
   	// retrieve info for the next client in ascending port number order.
   	logged_client currentClient = (*i);
@@ -98,7 +99,8 @@ void Server::statistics(){
 
  shell_success(cmd);
  int acc = 1;
- for(auto i = logged_clients.begin(); i != logged_clients.end(); ++i) {
+ std::list<logged_client>::iterator i;
+ for(i = logged_clients.begin(); i != logged_clients.end(); ++i) {
   // retrieve info for the next client in ascending port number order.
   logged_client currentClient = (*i);
   list_id = acc;
@@ -123,7 +125,8 @@ void Server::blocked(char *client_ip) {
 
   /* Iterate over clients in the block_lists until we find the one with the
    * right ip. */
-  for (auto i = block_lists.begin(); i != block_lists.end(); ++i) {
+  std::list<blocked_by>::iterator i;
+  for (i = block_lists.begin(); i != block_lists.end(); ++i) {
     blocked_by current_client = (*i);
 
     if (current_client.ip == client_ip) {
@@ -132,15 +135,16 @@ void Server::blocked(char *client_ip) {
 
       /* Iterate over the sorted list of clients that are blocked and print
        * them with the same format as the list() command */
-     int acc = 1;
-      for (auto it = current_client.blocked.begin(); it != current_client.blocked.end(); ++it) {
+      int acc = 1;
+      std::list<client>::iterator it;
+      for (it = current_client.blocked.begin(); it != current_client.blocked.end(); ++it) {
         client blocked_client = (*it);
 
-      list_id = acc;
-      port_listen = blocked_client.listening_port;
-      hname = blocked_client.hostname;
-      ip_addr = blocked_client.ip;
-      acc++;
+        list_id = acc;
+        port_listen = blocked_client.listening_port;
+        hname = blocked_client.hostname;
+        ip_addr = blocked_client.ip;
+        acc++;
     	  cse4589_print_and_log("%-5d%-35s%-20s%-8d\n", list_id, hname, ip_addr, port_listen);
       }
 

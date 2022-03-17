@@ -267,7 +267,8 @@ void Client::msg_received(char *client_ip, char *msg){
 /* isBlocked returns true if a client with client_ip is blocked, and returns
  * false otherwise */
 bool Client::isBlocked(char *client_ip){
-  for (auto it = blocked_clients.begin(); it != blocked_clients.end(); ++it) {
+  std::list<client>::iterator it;
+  for (it = blocked_clients.begin(); it != blocked_clients.end(); ++it) {
     client blocked_client = (*it);
 
   if (blocked_client.ip == client_ip) return true;
