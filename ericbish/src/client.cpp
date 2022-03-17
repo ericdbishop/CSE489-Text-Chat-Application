@@ -4,7 +4,7 @@
 #include "../include/global.h"
 #include "../include/logger.h"
 
-#include "process.cpp"
+#include "../include/process.h"
 
 class Client: public Process {
 public:
@@ -201,13 +201,13 @@ int connect_to_host(char *server_ip, char* server_port)
   /* Overload list() command to ensure that the client is logged in, and then
    * call parent function. */
   void list() {
-    char *cmd = "LIST";
+    char *cmd = (char *)"LIST";
     require_login(cmd);
     Process::list();
   }
 
   void login(char *server_ip, char *server_port){
-    char *cmd = "LOGIN";
+    char *cmd = (char *)"LOGIN";
     server_socket = connect_to_host(server_ip, server_port);
     if (server_socket < 0) {
       output_error(cmd);
@@ -220,23 +220,23 @@ int connect_to_host(char *server_ip, char* server_port)
 
   /* Retrieve an updated list of loggin in clients from the server and use it to update connected_clients */
   void refresh(){
-    char *cmd = "REFRESH";
+    char *cmd = (char *)"REFRESH";
     require_login(cmd);
   }
   
   void send(char *client_ip, char *msg){
-    char *cmd = "SEND";
+    char *cmd = (char *)"SEND";
     require_login(cmd);
   }
   
   void broadcast(char *msg){
-    char *cmd = "BROADCAST";
+    char *cmd = (char *)"BROADCAST";
     require_login(cmd);
   
   }
   
   void block(char *client_ip){
-    char *cmd = "BLOCK";
+    char *cmd = (char *)"BLOCK";
     require_login(cmd);
 
     if (isBlocked(client_ip)){
@@ -249,7 +249,7 @@ int connect_to_host(char *server_ip, char* server_port)
   }
   
   void unblock(char *client_ip){
-    char *cmd = "UNBLOCK";
+    char *cmd = (char *)"UNBLOCK";
     require_login(cmd);
   
     /* TO DO: NOTIFY SERVER */
@@ -258,20 +258,20 @@ int connect_to_host(char *server_ip, char* server_port)
   }
   
   void logout(){
-    char *cmd = "LOGOUT";
+    char *cmd = (char *)"LOGOUT";
     require_login(cmd);
   
   }
   
   void exit(){
-    char *cmd = "EXIT";
+    char *cmd = (char *)"EXIT";
   
   }
   
   // msgReceived will handle incoming messages and print/log them
   void msg_received(char *client_ip, char *msg){
-	  char *format = "msg from:%s\n[msg]:%s\n";
-    char *cmd = "RECEIVED";
+	  char *format = (char *)"msg from:%s\n[msg]:%s\n";
+    char *cmd = (char *)"RECEIVED";
 
     shell_success(cmd);
     cse4589_print_and_log(format, client_ip, msg);

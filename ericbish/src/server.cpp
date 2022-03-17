@@ -6,7 +6,7 @@
 #include "../include/global.h"
 #include "../include/logger.h"
 
-#include "process.cpp"
+#include "../include/process.h"
 
 
 /* logged_client struct contains statistics about each previously loggin in client. 
