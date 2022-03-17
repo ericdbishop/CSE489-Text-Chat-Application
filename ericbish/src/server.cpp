@@ -1,7 +1,14 @@
 #include <iostream>
 #include <stdio.h>
+
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <cstring>
+#include <fstream>
+#include <unistd.h>
 
 #include "../include/global.h"
 #include "../include/logger.h"
@@ -29,7 +36,6 @@
 		//else return true;
 	//}
 //};
-
 
 
 int Server::call_command(char *command){
@@ -67,15 +73,16 @@ int Server::call_command(char *command){
 /* This works the same as is_valid_ip in process.cpp, except it looks at
  * clients who are logged out and who are logged in. */
 bool Server::is_valid_ip(char *client_ip){
-int acc = 1;
-for (auto i = logged_clients.begin(); i != logged_clients.end(); ++i)
-{
-	// retrieve info for the next client in ascending port number order.
-	logged_client currentClient = (*i);
-	if (client_ip == currentClient.ip)
-		return true;
+  int acc = 1;
+  for (auto i = logged_clients.begin(); i != logged_clients.end(); ++i)
+  {
+  	// retrieve info for the next client in ascending port number order.
+  	logged_client currentClient = (*i);
+  	if (client_ip == currentClient.ip)
+  		return true;
+  }
+  return false;
 }
-return false;
 
 
 /* statistics displays a numbered list of clients who are or have previously
@@ -111,8 +118,8 @@ void Server::statistics(){
  * port numbers. */
 void Server::blocked(char *client_ip) {
   char *cmd = (char *)"BLOCKED";
- int list_id, port_listen;
- char *hname, *ip_addr;
+  int list_id, port_listen;
+  char *hname, *ip_addr;
 
   /* Iterate over clients in the block_lists until we find the one with the
    * right ip. */
@@ -146,7 +153,7 @@ void Server::blocked(char *client_ip) {
  * which is routed through the server. In the case of a broadcast message,
  * the to_client_ip should be 255.255.255.255 */
 void Server::event(char *from_client_ip, char *to_client_ip, char *msg) {
- char *format = (char *)"%-5d%-35s%-8d%-8d%-8s\n";
+  char *format = (char *)"%-5d%-35s%-8d%-8d%-8s\n";
   char *cmd = (char *)"RELAYED";
 
   shell_success(cmd);

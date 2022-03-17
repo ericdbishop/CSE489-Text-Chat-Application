@@ -45,6 +45,7 @@ class Process{
 	bool is_valid_ip(char *client_ip);
 	void output(char *cmd, char *format, char *input);
 	void output(char *cmd, char *format, int input);
+    void output_error(char *cmd);
 	void author();
 	void ip();
     void port();

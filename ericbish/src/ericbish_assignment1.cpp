@@ -39,8 +39,8 @@
 
 #include "../include/global.h"
 #include "../include/logger.h"
-#include "client.cpp"
-#include "server.cpp"
+#include "../include/client.h"
+#include "../include/server.h"
 
 using namespace std;
 
