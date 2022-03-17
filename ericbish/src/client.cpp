@@ -5,7 +5,7 @@
 #include "../include/global.h"
 #include "../include/logger.h"
 
-#include "../include/process.h"
+#include "../include/client.h"
 
 class Client: public Process {
 public:
