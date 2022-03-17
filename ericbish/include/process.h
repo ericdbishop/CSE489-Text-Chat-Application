@@ -5,6 +5,11 @@
 
 using namespace std;
 
+#define STDIN 0
+#define CMD_SIZE 100
+#define BACKLOG 5
+#define BUFFER_SIZE 256
+
 struct client
 {
 	int listening_port;
@@ -25,10 +30,12 @@ void shell_success(char *command_str);
 void shell_end(char *command_str);
 void shell_error(char *command_str);
 int makeClient(client *newClient);
+void create_listener(client *newClient);
 
 class Process{
     public:
 	struct client *self;
+	// listening_socket is the socket fd.
 	int listening_socket;
 	std::list<client> connected_clients;
 
@@ -40,6 +47,8 @@ class Process{
 	void output(char *cmd, char *format, int input);
 	void author();
 	void ip();
-}
+    void port();
+    void list();
+};
 
 #endif

@@ -16,246 +16,227 @@
 
 using namespace std;
 
-#define STDIN 0
-#define CMD_SIZE 100
-#define BACKLOG 5
-#define BUFFER_SIZE 256
-
-
 /* Create a instance of the client struct for each client that connects. Maintain
  * a list of connected clients for all processes so that they can call list().
  * We should actively maintain the correct order of clients so it goes from
  * smallest to largest port number */
 
-class Process
+Process::Process(int port)
 {
-public:
-	// char hostname[128], ipstr[INET_ADDRSTRLEN]; // maybe INET_ADDR6STRLEN idk?? needs testing
-	struct client *self;
-	// listening_socket is the socket fd.
-	int listening_socket;
-	std::list<client> connected_clients;
+	memset(&self, 0, sizeof(client));
+	self->listening_port = port;
 
-	//int read_inputs();
-	//int call_command(char *command);
-	//bool is_valid_ip(char *client_ip);
+	/* Fill in the details for the self Client object */
+	makeClient(self);
+}
 
-	Process(int port)
+/* read_inputs() is responsible for calling all other functions and will run so
+ * long as the program is running  */
+int Process::read_inputs()
+{
+	struct sockaddr_in client_addr;
+	fd_set readfds, master;
+	socklen_t caddr_len;
+	int fdaccept, fdmax = 0;
+
+	// clear the file descriptor sets
+	FD_ZERO(&readfds);
+	FD_ZERO(&master);
+
+	FD_SET(STDIN, &master); // add stdin to the file descriptor set
+
+	while (true)
 	{
-		memset(&self, 0, sizeof(client));
-		self->listening_port = port;
-
-		/* Fill in the details for the self Client object */
-		makeClient(self);
-	}
-
-	/* read_inputs() is responsible for calling all other functions and will run so
-	 * long as the program is running  */
-	int read_inputs()
-	{
-		struct sockaddr_in client_addr;
-		fd_set readfds, master;
-		socklen_t caddr_len;
-		int fdaccept, fdmax = 0;
-
-		// clear the file descriptor sets
-		FD_ZERO(&readfds);
-		FD_ZERO(&master);
-
-		FD_SET(STDIN, &master); // add stdin to the file descriptor set
-
-		while (true)
+		readfds = master;
+		if (select(fdmax + 1, &readfds, NULL, NULL, NULL) == -1)
 		{
-			readfds = master;
-			if (select(fdmax + 1, &readfds, NULL, NULL, NULL) == -1)
-			{
-				fprintf(stderr, "select error\n");
-				// the code in the book makes a call to exit(4)
-				// not sure if this is how we should handle the error though
-			}
-			for (int i = 0; i <= fdmax; i++)
-			{
-				if (FD_ISSET(i, &readfds))
-				{ // found a file descriptor
-					if (i == STDIN)
+			fprintf(stderr, "select error\n");
+			// the code in the book makes a call to exit(4)
+			// not sure if this is how we should handle the error though
+		}
+		for (int i = 0; i <= fdmax; i++)
+		{
+			if (FD_ISSET(i, &readfds))
+			{ // found a file descriptor
+				if (i == STDIN)
+				{
+					// HANDLE SHELL COMMANDS
+
+					// first we read the command from the command line
+					char *command = (char *)malloc(sizeof(char) * CMD_SIZE);
+					memset(command, '\0', CMD_SIZE);
+					if (fgets(command, CMD_SIZE - 1, stdin) == NULL)
 					{
-						// HANDLE SHELL COMMANDS
-
-						// first we read the command from the command line
-						char *command = (char *)malloc(sizeof(char) * CMD_SIZE);
-						memset(command, '\0', CMD_SIZE);
-						if (fgets(command, CMD_SIZE - 1, stdin) == NULL)
-						{
-							exit(-1);
-						}
-
-						// now we call the corresponding helper functions for each command
-						call_command(command);
+						exit(-1);
 					}
-					else if (i == listening_socket)
-					{ // listener is the servers listening socket fd,
-					  // I need to figure out how to store this in a variable
-						// Accept new connections and add them to master set
-						caddr_len = sizeof(client_addr);
-						fdaccept = accept(listening_socket, (struct sockaddr *)&client_addr, &caddr_len);
-						if (fdaccept < 0)
-							perror("Accept failed.");
 
-						printf("\nRemote Host connected!\n");
+					// now we call the corresponding helper functions for each command
+					call_command(command);
+				}
+				else if (i == listening_socket)
+				{ // listener is the servers listening socket fd,
+				  // I need to figure out how to store this in a variable
+					// Accept new connections and add them to master set
+					caddr_len = sizeof(client_addr);
+					fdaccept = accept(listening_socket, (struct sockaddr *)&client_addr, &caddr_len);
+					if (fdaccept < 0)
+						perror("Accept failed.");
 
-						/* Add to watched socket list */
-						FD_SET(fdaccept, &master);
-						if (fdaccept > fdmax)
-							fdmax = fdaccept;
+					printf("\nRemote Host connected!\n");
+
+					/* Add to watched socket list */
+					FD_SET(fdaccept, &master);
+					if (fdaccept > fdmax)
+						fdmax = fdaccept;
+				}
+				else
+				{
+					// handle data from a client
+					/* Initialize buffer to receieve response */
+					char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+					memset(buffer, '\0', BUFFER_SIZE);
+
+					if (recv(i, buffer, BUFFER_SIZE, 0) <= 0)
+					{
+						close(i);
+						printf("Remote Host terminated connection!\n");
+
+						/* Remove from watched list */
+						FD_CLR(i, &master);
 					}
 					else
 					{
-						// handle data from a client
-						/* Initialize buffer to receieve response */
-						char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
-						memset(buffer, '\0', BUFFER_SIZE);
+						// Process incoming data from existing clients here ...
 
-						if (recv(i, buffer, BUFFER_SIZE, 0) <= 0)
-						{
-							close(i);
-							printf("Remote Host terminated connection!\n");
-
-							/* Remove from watched list */
-							FD_CLR(i, &master);
-						}
-						else
-						{
-							// Process incoming data from existing clients here ...
-
-							printf("\nClient sent me: %s\n", buffer);
-							printf("ECHOing it back to the remote host ... ");
-							// I'm pretty sure we don't want to use fdaccept when sending information to the clients
-							if (send(fdaccept, buffer, strlen(buffer), 0) == strlen(buffer))
-								printf("Done!\n");
-							fflush(stdout);
-						}
-
-						free(buffer);
+						printf("\nClient sent me: %s\n", buffer);
+						printf("ECHOing it back to the remote host ... ");
+						// I'm pretty sure we don't want to use fdaccept when sending information to the clients
+						if (send(fdaccept, buffer, strlen(buffer), 0) == strlen(buffer))
+							printf("Done!\n");
+						fflush(stdout);
 					}
+
+					free(buffer);
 				}
 			}
 		}
 	}
+}
 
-	// call_command determines which function to call based on its input string
-	int call_command(char *command)
-	{
-		if (strcmp(command, "AUTHOR") == 0)
-			author();
-		else if (strcmp(command, "IP") == 0)
-			ip();
-		else if (strcmp(command, "PORT") == 0)
-			port();
-		else if (strcmp(command, "LIST") == 0)
-			list();
-		else
-			return -1;
+// call_command determines which function to call based on its input string
+int Process::call_command(char *command)
+{
+	if (strcmp(command, "AUTHOR") == 0)
+		author();
+	else if (strcmp(command, "IP") == 0)
+		ip();
+	else if (strcmp(command, "PORT") == 0)
+		port();
+	else if (strcmp(command, "LIST") == 0)
+		list();
+	else
+		return -1;
 
-		return 0;
-	}
-	
-	/* This function checks the IP's of connected clients and returns true if the
-	 * given IP is valid, false other wise. This implementation assumes that the
-	 * given IP is only valid if it belongs to a logged-in client.  */
-	bool is_valid_ip(char *client_ip){
-		int acc = 1;
-		for (auto i = connected_clients.begin(); i != connected_clients.end(); ++i)
-		{
-			// retrieve info for the next client in ascending port number order.
-			client currentClient = (*i);
-			if (client_ip == currentClient.ip)
-				return true;
-		}
-		return false;
-	}
+	return 0;
+}
 
-	/* SHELL commands */
-	void output(char *cmd, char *format, char *input)
+/* This function checks the IP's of connected clients and returns true if the
+ * given IP is valid, false other wise. This implementation assumes that the
+ * given IP is only valid if it belongs to a logged-in client.  */
+bool Process::is_valid_ip(char *client_ip){
+	int acc = 1;
+	for (auto i = connected_clients.begin(); i != connected_clients.end(); ++i)
 	{
-		shell_success(cmd);
-		cse4589_print_and_log(format, input);
-		shell_end(cmd);
+		// retrieve info for the next client in ascending port number order.
+		client currentClient = (*i);
+		if (client_ip == currentClient.ip)
+			return true;
 	}
-	void output(char *cmd, char *format, int input)
-	{
-		shell_success(cmd);
-		cse4589_print_and_log(format, input);
-		shell_end(cmd);
-	}
-	void output_error(char *cmd)
+	return false;
+}
+
+/* SHELL commands */
+void Process::output(char *cmd, char *format, char *input)
+{
+	shell_success(cmd);
+	cse4589_print_and_log(format, input);
+	shell_end(cmd);
+}
+void Process::output(char *cmd, char *format, int input)
+{
+	shell_success(cmd);
+	cse4589_print_and_log(format, input);
+	shell_end(cmd);
+}
+void Process::output_error(char *cmd)
+{
+	shell_error(cmd);
+	shell_end(cmd);
+}
+
+void Process::author()
+{
+	char *cmd = (char *)"AUTHOR";
+	char *format = (char *)"I, %s, have read and understood the course academic policy.\n";
+	char *name = (char *)"ericbish";
+
+	output(cmd, format, name);
+}
+
+void Process::ip()
+{	// uses code from section 6.3 of Beej's Guide to Network Programming
+	/* We still need to have some error handling in here, from how the PA1
+	 * description is written. So we could maybe have a separate helper
+	 * function that we call once when a process begins, to gather its
+	 * hostname and external ip and whatnot, and then everytime the IP
+	 * command is given we can call it again. The helper function will detect
+	 * errors and return -1 if something is wrong. */
+
+	char *cmd = (char *)"IP";
+	char *format = (char *)"IP:%s\n";
+	/* Will this prodcue issues if self has already been defined? */
+	int result = makeClient(self);
+
+	if (result == -1)
 	{
 		shell_error(cmd);
-		shell_end(cmd);
+		return;
 	}
+	// Print output
+	output(cmd, format, self->ip);
+}
 
-	void author()
+void Process::port()
+{
+	char *cmd = (char *)"PORT";
+	char *format = (char *)"PORT:%d\n";
+	output(cmd, format, self->listening_port);
+}
+
+/* list() should  */
+void Process::list()
+{
+	int list_id, port_listen;
+	char *hname, *ip_addr;
+
+	char *cmd = (char *)"LIST";
+	shell_success(cmd);
+	int acc = 1;
+	for (auto i = connected_clients.begin(); i != connected_clients.end(); ++i)
 	{
-		char *cmd = (char *)"AUTHOR";
-		char *format = (char *)"I, %s, have read and understood the course academic policy.\n";
-		char *name = (char *)"ericbish";
-
-		output(cmd, format, name);
+		// retrieve info for the next client in ascending port number order.
+		client currentClient = (*i);
+		list_id = acc;
+		port_listen = currentClient.listening_port;
+		hname = currentClient.hostname;
+		ip_addr = currentClient.ip;
+		acc++;
+		cse4589_print_and_log("%-5d%-35s%-20s%-8d\n", list_id, hname, ip_addr, port_listen);
 	}
+	shell_end(cmd);
+}
 
-	void ip()
-	{	// uses code from section 6.3 of Beej's Guide to Network Programming
-		/* We still need to have some error handling in here, from how the PA1
-		 * description is written. So we could maybe have a separate helper
-		 * function that we call once when a process begins, to gather its
-		 * hostname and external ip and whatnot, and then everytime the IP
-		 * command is given we can call it again. The helper function will detect
-		 * errors and return -1 if something is wrong. */
-
-		char *cmd = (char *)"IP";
-		char *format = (char *)"IP:%s\n";
-		/* Will this prodcue issues if self has already been defined? */
-		int result = makeClient(self);
-
-		if (result == -1)
-		{
-			shell_error(cmd);
-			return;
-		}
-		// Print output
-		output(cmd, format, self->ip);
-	}
-
-	void port()
-	{
-		char *cmd = (char *)"PORT";
-		char *format = (char *)"PORT:%d\n";
-		output(cmd, format, self->listening_port);
-	}
-
-	/* list() should  */
-	void list()
-	{
-		int list_id, port_listen;
-		char *hname, *ip_addr;
-
-		char *cmd = (char *)"LIST";
-		shell_success(cmd);
-		int acc = 1;
-		for (auto i = connected_clients.begin(); i != connected_clients.end(); ++i)
-		{
-			// retrieve info for the next client in ascending port number order.
-			client currentClient = (*i);
-			list_id = acc;
-			port_listen = currentClient.listening_port;
-			hname = currentClient.hostname;
-			ip_addr = currentClient.ip;
-			acc++;
-			cse4589_print_and_log("%-5d%-35s%-20s%-8d\n", list_id, hname, ip_addr, port_listen);
-		}
-		shell_end(cmd);
-	}
-
-}; // End Process class
+; // End Process class
 
 /* This helper function creates the socket we listen for new connections on,
 	* it should be called during initialization of the Server
