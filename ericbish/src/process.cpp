@@ -56,6 +56,7 @@ public:
 
 	int read_inputs();
 	int call_command(char *command);
+	bool is_valid_ip(char *client_ip);
 
 	Process(int port)
 	{
@@ -174,6 +175,21 @@ public:
 			return -1;
 
 		return 0;
+	}
+	
+	/* This function checks the IP's of connected clients and returns true if the
+	 * given IP is valid, false other wise. This implementation assumes that the
+	 * given IP is only valid if it belongs to a logged-in client.  */
+	bool is_valid_ip(char *client_ip){
+		int acc = 1;
+		for (auto i = connected_clients.begin(); i != connected_clients.end(); ++i)
+		{
+			// retrieve info for the next client in ascending port number order.
+			client currentClient = (*i);
+			if (client_ip == currentClient.ip)
+				return true;
+		}
+		return false;
 	}
 
 	/* SHELL commands */

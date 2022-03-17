@@ -75,13 +75,31 @@ void event(char *from_client_ip, char *to_client_ip, char *msg, bool broadcast);
         char *client_ip[cmd.substr(8).size() + 1];
         cmd.copy(client_ip, cmd.substr(8).length() + 1);
         client_ip[cmd.length()] = '\0';
-        //Check if the IP is valid!!!!!!!
+        //Check if the IP is valid
+        if (!is_valid_ip(client_ip)) {
+          // error
+          perror("Invalid IP");
+        }
         blocked(client_ip);
     }
 	  else return -1;
 
 	  return 0;
   }
+
+  /* This works the same as is_valid_ip in process.cpp, except it looks at
+   * clients who are logged out and who are logged in. */
+	bool is_valid_ip(char *client_ip){
+		int acc = 1;
+		for (auto i = logged_clients.begin(); i != logged_clients.end(); ++i)
+		{
+			// retrieve info for the next client in ascending port number order.
+			logged_client currentClient = (*i);
+			if (client_ip == currentClient.ip)
+				return true;
+		}
+		return false;
+	}
 
   /* statistics displays a numbered list of clients who are or have previously
    * logged in to the server, who have not used the EXIT command, 
