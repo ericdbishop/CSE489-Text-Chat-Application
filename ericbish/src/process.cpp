@@ -225,7 +225,7 @@ void Process::output_error(char *cmd)
 void Process::author()
 {
 	char *cmd = (char *)"AUTHOR";
-	char *format = (char *)"I, %s, have read and understood the course academic policy.\n";
+	char *format = (char *)"I, %s, have read and understood the course academic integrity policy.\n";
 	char *name = (char *)"ericbish";
 
 	output(cmd, format, name);
