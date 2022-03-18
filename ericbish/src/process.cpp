@@ -26,7 +26,7 @@ Process::Process(char *port)
 	self.listening_port = port;
 
 	/* Fill in the details for the self Client object */
-	makeClient(self);
+	makeClient(&self);
 }
 
 /* This function will send the list of connected clients to a client 
@@ -153,11 +153,13 @@ int Process::read_inputs()
 					{
 						// Process incoming data from existing clients here ...
 
-						printf("\nClient sent me: %s\n", buffer);
-						printf("ECHOing it back to the remote host ... ");
-						// I'm pretty sure we don't want to use fdaccept when sending information to the clients
-						if (send(fdaccept, buffer, strlen(buffer), 0) == strlen(buffer))
-							printf("Done!\n");
+						
+
+						// printf("\nClient sent me: %s\n", buffer);
+						// printf("ECHOing it back to the remote host ... ");
+						// // I'm pretty sure we don't want to use fdaccept when sending information to the clients
+						// if (send(fdaccept, buffer, strlen(buffer), 0) == strlen(buffer))
+						// 	printf("Done!\n");
 						fflush(stdout);
 					}
 
@@ -241,13 +243,14 @@ void Process::ip()
 	char *cmd = (char *)"IP";
 	char *format = (char *)"IP:%s\n";
 	/* Will this prodcue issues if self has already been defined? */
-	int result = makeClient(self);
+	//int result = makeClient(self);
 
-	if (result == -1)
-	{
-		shell_error(cmd);
-		return;
-	}
+	// if (result == -1)
+	// {
+	// 	shell_error(cmd);
+	// 	return;
+	// }
+	
 	// Print output
 	output(cmd, format, self.ip);
 }
@@ -288,7 +291,7 @@ void Process::list()
 /* This helper function creates the socket we listen for new connections on,
 	* it should be called during initialization of the Server
 	*/
-void create_listener(client newClient) {
+void create_listener(client *newClient) {
 	int head_socket, selret, sock_index, fdaccept = 0, caddr_len;
 	struct sockaddr_in client_addr;
 	struct addrinfo hints, *res;
@@ -301,20 +304,20 @@ void create_listener(client newClient) {
 	hints.ai_flags = AI_PASSIVE;
 
 	/* Fill up address structures */
-	if (getaddrinfo(NULL, newClient.listening_port, &hints, &res) != 0)
+	if (getaddrinfo(NULL, newClient->listening_port, &hints, &res) != 0)
 	{
 		perror("getaddrinfo failed");
 	}
 
 	/* Socket */
-	newClient.listening_socket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-	if (newClient.listening_socket < 0)
+	newClient->listening_socket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+	if (newClient->listening_socket < 0)
 	{
 		perror("Cannot create socket");
 	}
 
 	/* Bind */
-	if (bind(newClient.listening_socket, res->ai_addr, res->ai_addrlen) < 0)
+	if (bind(newClient->listening_socket, res->ai_addr, res->ai_addrlen) < 0)
 	{
 		perror("Bind failed");
 	}
@@ -322,18 +325,18 @@ void create_listener(client newClient) {
 	freeaddrinfo(res);
 
 	/* Listen */
-	if (listen(newClient.listening_socket, BACKLOG) < 0)
+	if (listen(newClient->listening_socket, BACKLOG) < 0)
 	{
 		perror("Unable to listen on port");
 	}
 }
 
 /* Return 1 on success, -1 otherwise */
-int makeClient(client newClient)
+int makeClient(client *newClient)
 {
 
 	char *cmd = (char *)"IP";
-	char ipstr[INET_ADDRSTRLEN]; // maybe INET_ADDR6STRLEN idk?? needs testing
+	char ipstr[INET_ADDRSTRLEN];
 	struct addrinfo hints, *res;
 	int sockfd, status;
 
@@ -374,7 +377,7 @@ int makeClient(client newClient)
 		return -1;
 	}
 
-	if ((inet_ntop(AF_INET, &(myaddr.sin_addr), ipstr, sizeof(ipstr))) == NULL)
+	if ((inet_ntop(AF_INET, &(myaddr.sin_addr), newClient->ip, sizeof(ipstr))) == NULL)
 	{
 		fprintf(stderr, "IP: inet_ntop error\n");
 		return -1;
@@ -387,12 +390,12 @@ int makeClient(client newClient)
 		return -1;
 	}
 
-	newClient.ip = ipstr;
+	//newClient->ip = ipstr;
 	// myaddr is the whole sockaddr_in struct, we are getting the size of just
 	// the sin_addr here.
 	hostent *host = gethostbyaddr((char *)&myaddr.sin_addr.s_addr, sizeof(struct in_addr), AF_INET);
 	// strncpy(ret->im_host, hent->h_name, sizeof(ret->im_host) - 1);
-	std::strncpy(newClient.hostname, host->h_name, sizeof(newClient.hostname) - 1);
+	std::strncpy(newClient->hostname, host->h_name, sizeof(newClient->hostname) - 1);
 
 	// create the listening socket for the specified port
 	create_listener(newClient);

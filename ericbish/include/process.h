@@ -29,7 +29,7 @@ struct client
 {
 	char *listening_port;
 	int listening_socket;
-	char *ip;
+	char ip[INET_ADDRSTRLEN];
 	char hostname[128];
 	/* compareClient provides a sorting function for the connected_clients linked list */
 	bool operator()(const client one, const client two)
@@ -44,12 +44,13 @@ struct client
 void shell_success(char *command_str);
 void shell_end(char *command_str);
 void shell_error(char *command_str);
-int makeClient(client newClient);
-void create_listener(client newClient);
+void create_listener(client *newClient);
+int makeClient(client *newClient);
 
 class Process{
     public:
 	struct client self;
+	bool program_mode;
 	// listening_socket is the socket fd.
 	int listening_socket;
 	std::list<client> connected_clients;
