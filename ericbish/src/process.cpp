@@ -104,7 +104,8 @@ int Process::read_inputs()
 					}
 
 					string command_string = std::string(command);
-					command_string.pop_back();
+					command_string.erase(command_string.size()-1,1);
+					//command_string.find('\n')
 					char cmd[command_string.size() + 1];
 					command_string.copy(cmd, command_string.length() + 1);
 					cmd[command_string.length()] = '\0';
