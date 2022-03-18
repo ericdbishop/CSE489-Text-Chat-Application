@@ -9,10 +9,10 @@ public:
     char *server_port;
     int server_socket;
     int port_listen;
-    bool logged_in = false;
+    bool logged_in;
     std::list<client> blocked_clients;
 
-    Client(int port);
+    Client(char *port);
     void login(char *server_ip, char *server_port);
     void refresh();
     void send(char *client_ip, char *msg);

@@ -1,18 +1,17 @@
-#include <iostream>
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <cstring>
-#include <fstream>
-#include <unistd.h>
+//#include <iostream>
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <sys/types.h>
+//#include <sys/socket.h>
+//#include <netdb.h>
+//#include <arpa/inet.h>
+//#include <netinet/in.h>
+//#include <cstring>
+//#include <fstream>
+//#include <unistd.h>
 #include "../include/global.h"
 #include "../include/logger.h"
 #include "../include/process.h"
-
-#include <list>
 
 using namespace std;
 
@@ -21,7 +20,7 @@ using namespace std;
  * We should actively maintain the correct order of clients so it goes from
  * smallest to largest port number */
 
-Process::Process(int port)
+Process::Process(char *port)
 {
 	memset(&self, 0, sizeof(client));
 	self->listening_port = port;
@@ -29,6 +28,14 @@ Process::Process(int port)
 	/* Fill in the details for the self Client object */
 	makeClient(self);
 }
+
+/*
+int Process::send_connected_clients()
+{
+	
+}
+*/
+
 
 /* read_inputs() is responsible for calling all other functions and will run so
  * long as the program is running  */
@@ -88,6 +95,16 @@ int Process::read_inputs()
 					FD_SET(fdaccept, &master);
 					if (fdaccept > fdmax)
 						fdmax = fdaccept;
+
+					// Now if we are instantiated as the server we should send the connected client list to the client
+
+
+
+
+
+
+
+					
 				}
 				else
 				{
@@ -211,7 +228,7 @@ void Process::port()
 {
 	char *cmd = (char *)"PORT";
 	char *format = (char *)"PORT:%d\n";
-	output(cmd, format, self->listening_port);
+	output(cmd, format, atoi(self->listening_port));
 }
 
 /* list() should  */
@@ -229,7 +246,7 @@ void Process::list()
 		// retrieve info for the next client in ascending port number order.
 		client currentClient = (*i);
 		list_id = acc;
-		port_listen = currentClient.listening_port;
+		port_listen = atoi(currentClient.listening_port);
 		hname = currentClient.hostname;
 		ip_addr = currentClient.ip;
 		acc++;
@@ -256,7 +273,7 @@ void create_listener(client *newClient) {
 	hints.ai_flags = AI_PASSIVE;
 
 	/* Fill up address structures */
-	if (getaddrinfo(NULL, to_string(newClient->listening_port).c_str(), &hints, &res) != 0)
+	if (getaddrinfo(NULL, newClient->listening_port, &hints, &res) != 0)
 	{
 		perror("getaddrinfo failed");
 	}

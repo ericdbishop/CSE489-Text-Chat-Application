@@ -1,21 +1,11 @@
-#include <iostream>
-#include <stdio.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-
 #include "../include/global.h"
 #include "../include/logger.h"
 #include "../include/client.h"
 
-Client::Client (int port) : Process(port) {
+Client::Client (char *port) : Process(port) {
   // Add self Client object to list of connected clients.
- connected_clients.insert(connected_clients.begin(), *self);
+  logged_in = false;
+  connected_clients.insert(connected_clients.begin(), *self);
 
  // Sorting isn't neccesary here if self is the only client in the list
  // but for future reference this is how we sort:

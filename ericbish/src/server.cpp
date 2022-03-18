@@ -1,14 +1,12 @@
-#include <iostream>
-#include <stdio.h>
+//#include <iostream>
+//#include <stdio.h>
+//#include <stdlib.h>
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <cstring>
-#include <fstream>
-#include <unistd.h>
+//#include <sys/types.h>
+//#include <sys/socket.h>
+//#include <netdb.h>
+//#include <arpa/inet.h>
+//#include <netinet/in.h>
 
 #include "../include/global.h"
 #include "../include/logger.h"
@@ -141,7 +139,7 @@ void Server::blocked(char *client_ip) {
         client blocked_client = (*it);
 
         list_id = acc;
-        port_listen = blocked_client.listening_port;
+        port_listen = atoi(blocked_client.listening_port);
         hname = blocked_client.hostname;
         ip_addr = blocked_client.ip;
         acc++;

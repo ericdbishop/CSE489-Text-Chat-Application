@@ -19,7 +19,7 @@ public:
 
   // The process constructor should be called first.
     // Server constructor
-  Server (int port) : Process(port) {}
+  Server (char *port) : Process(port) {}
   void statistics();
   void blocked(char *client_ip);
   void event(char *from_client_ip, char *to_client_ip, char *msg);

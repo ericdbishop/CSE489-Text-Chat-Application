@@ -27,6 +27,7 @@
 
 #include <iostream>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -43,6 +44,8 @@
 #include "../include/server.h"
 
 using namespace std;
+
+#define EXIT_FAILURE 1
 
 /**
  * main function
@@ -78,11 +81,11 @@ int main(int argc, char **argv)
 
 	/* Create the client/server object */
 	if (argv[1] == "s") {
-		Server program = Server(atoi(argv[2]));
+		Server program = Server(argv[2]);
 		program.read_inputs();
 	}
 	else if (argv[1] == "c") {
-		Client program = Client(atoi(argv[2]));
+		Client program = Client(argv[2]);
 		program.read_inputs();
 	}
 	return 0;

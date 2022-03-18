@@ -1,7 +1,22 @@
-
 #ifndef PROCESS_H_
 #define PROCESS_H_
 #include <list>
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <cstring>
+#include <fstream>
+#include <unistd.h>
+#include <netdb.h>
+#include <string>
 
 using namespace std;
 
@@ -12,14 +27,14 @@ using namespace std;
 
 struct client
 {
-	int listening_port;
+	char *listening_port;
 	int listening_socket;
 	char *ip;
 	char hostname[128];
 	/* compareClient provides a sorting function for the connected_clients linked list */
 	bool operator()(const client one, const client two)
 	{
-		if (one.listening_port > two.listening_port)
+		if (atoi(one.listening_port) > atoi(two.listening_port))
 			return false;
 		else
 			return true;
@@ -39,7 +54,7 @@ class Process{
 	int listening_socket;
 	std::list<client> connected_clients;
 
-	Process(int port);
+	Process(char *port);
 	int read_inputs();
 	int call_command(char *command);
 	bool is_valid_ip(char *client_ip);
