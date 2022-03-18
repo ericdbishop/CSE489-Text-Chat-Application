@@ -123,7 +123,8 @@ int Process::read_inputs()
 						fdmax = fdaccept;
 
 					// Now if we are instantiated as the server we should send the connected client list to the client
-					send_connected_clients(self, );
+					
+					/////////////send_connected_clients(self, fdaccept);
 					
 				}
 				else
@@ -380,10 +381,12 @@ int makeClient(client newClient)
 	}
 
 	newClient.ip = ipstr;
-	/* The res addrinfo structure contains
-	 * ai_canonname which should be the hostname. */
-	//gethostbyaddr()
-	std::strncpy(newClient.hostname, res->ai_canonname, sizeof(newClient.hostname));
+	// myaddr is the whole sockaddr_in struct, we are getting the size of just
+	// the sin_addr here.
+	hostent *host = gethostbyaddr((char *)&myaddr.sin_addr.s_addr, sizeof(struct in_addr), AF_INET);
+	printf(host->h_name);
+	// strncpy(ret->im_host, hent->h_name, sizeof(ret->im_host) - 1);
+	std::strncpy(newClient.hostname, host->h_name, sizeof(newClient.hostname) - 1);
 
 	// create the listening socket for the specified port
 	create_listener(newClient);
