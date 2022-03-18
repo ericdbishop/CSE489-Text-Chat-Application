@@ -91,7 +91,7 @@ int Process::read_inputs()
 		{
 			if (FD_ISSET(i, &readfds))
 			{ // found a file descriptor
-				if (i == STDIN)
+				if (i == STDIN) 				// BREAKPOINT HERE
 				{
 					// HANDLE SHELL COMMANDS
 
@@ -103,9 +103,15 @@ int Process::read_inputs()
 						exit(-1);
 					}
 
+					string command_string = std::string(command);
+					command_string.pop_back();
+					char cmd[command_string.size() + 1];
+					command_string.copy(cmd, command_string.length() + 1);
+					cmd[command_string.length()] = '\0';
+
 					// now we call the corresponding helper functions for each command
-					call_command(command);
-				}
+					call_command(cmd);
+				}								// BREAKPOINT HERE
 				else if (i == listening_socket)
 				{ // listener is the servers listening socket fd,
 				  // I need to figure out how to store this in a variable
@@ -384,7 +390,6 @@ int makeClient(client newClient)
 	// myaddr is the whole sockaddr_in struct, we are getting the size of just
 	// the sin_addr here.
 	hostent *host = gethostbyaddr((char *)&myaddr.sin_addr.s_addr, sizeof(struct in_addr), AF_INET);
-	printf(host->h_name);
 	// strncpy(ret->im_host, hent->h_name, sizeof(ret->im_host) - 1);
 	std::strncpy(newClient.hostname, host->h_name, sizeof(newClient.hostname) - 1);
 
