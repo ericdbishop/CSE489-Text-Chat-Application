@@ -69,7 +69,8 @@ int main(int argc, char **argv)
 		cse4589_print_and_log("Incorrect Number of Arguments\n");
 		exit(EXIT_FAILURE);
 	}
-	else if(argv[1] != "s" || argv[1] != "c") {
+	else if(strcmp(argv[1], "s") != 0 && strcmp(argv[1], "c") != 0) {
+		printf(argv[1]);
 		/* The double quotes allow you to split a string across multiple lines, I
 		 * did this for readability. */
 		cse4589_print_and_log("The first argument must be a 's' to initiate the" 
@@ -80,11 +81,11 @@ int main(int argc, char **argv)
 	}
 
 	/* Create the client/server object */
-	if (argv[1] == "s") {
+	if (strcmp(argv[1],"s") == 0) {
 		Server program = Server(argv[2]);
 		program.read_inputs();
 	}
-	else if (argv[1] == "c") {
+	else if (strcmp(argv[1], "c") == 0) {
 		Client program = Client(argv[2]);
 		program.read_inputs();
 	}

@@ -49,7 +49,7 @@ void create_listener(client *newClient);
 
 class Process{
     public:
-	struct client *self;
+	struct client self;
 	// listening_socket is the socket fd.
 	int listening_socket;
 	std::list<client> connected_clients;
@@ -65,6 +65,7 @@ class Process{
 	void ip();
     void port();
     void list();
+	int send_connected_clients(Process server, int client_socket);
 };
 
 #endif

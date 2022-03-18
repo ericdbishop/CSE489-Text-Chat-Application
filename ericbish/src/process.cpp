@@ -22,19 +22,24 @@ using namespace std;
 
 Process::Process(char *port)
 {
-	memset(&self, 0, sizeof(client));
-	self->listening_port = port;
+	//memset(&self, 0, sizeof(client));
+	self.listening_port = port;
 
 	/* Fill in the details for the self Client object */
 	makeClient(self);
 }
 
-/*
-int Process::send_connected_clients()
+/* This function will send the list of connected clients to a client 
+ * given the server object and the client socket number */
+int Process::send_connected_clients(Process server, int client_socket)
 {
-	
+	for (std::list<client>::iterator it=server.connected_clients.begin(); it != server.connected_clients.end(); ++it) {
+		char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+		
+	}
+	return 0;
 }
-*/
+
 
 
 /* read_inputs() is responsible for calling all other functions and will run so
@@ -221,14 +226,14 @@ void Process::ip()
 		return;
 	}
 	// Print output
-	output(cmd, format, self->ip);
+	output(cmd, format, self.ip);
 }
 
 void Process::port()
 {
 	char *cmd = (char *)"PORT";
 	char *format = (char *)"PORT:%d\n";
-	output(cmd, format, atoi(self->listening_port));
+	output(cmd, format, atoi(self.listening_port));
 }
 
 /* list() should  */
@@ -260,7 +265,7 @@ void Process::list()
 /* This helper function creates the socket we listen for new connections on,
 	* it should be called during initialization of the Server
 	*/
-void create_listener(client *newClient) {
+void create_listener(client newClient) {
 	int head_socket, selret, sock_index, fdaccept = 0, caddr_len;
 	struct sockaddr_in client_addr;
 	struct addrinfo hints, *res;
@@ -273,20 +278,20 @@ void create_listener(client *newClient) {
 	hints.ai_flags = AI_PASSIVE;
 
 	/* Fill up address structures */
-	if (getaddrinfo(NULL, newClient->listening_port, &hints, &res) != 0)
+	if (getaddrinfo(NULL, newClient.listening_port, &hints, &res) != 0)
 	{
 		perror("getaddrinfo failed");
 	}
 
 	/* Socket */
-	newClient->listening_socket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-	if (newClient->listening_socket < 0)
+	newClient.listening_socket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+	if (newClient.listening_socket < 0)
 	{
 		perror("Cannot create socket");
 	}
 
 	/* Bind */
-	if (bind(newClient->listening_socket, res->ai_addr, res->ai_addrlen) < 0)
+	if (bind(newClient.listening_socket, res->ai_addr, res->ai_addrlen) < 0)
 	{
 		perror("Bind failed");
 	}
@@ -294,14 +299,14 @@ void create_listener(client *newClient) {
 	freeaddrinfo(res);
 
 	/* Listen */
-	if (listen(newClient->listening_socket, BACKLOG) < 0)
+	if (listen(newClient.listening_socket, BACKLOG) < 0)
 	{
 		perror("Unable to listen on port");
 	}
 }
 
 /* Return 1 on success, -1 otherwise */
-int makeClient(client *newClient)
+int makeClient(client newClient)
 {
 
 	char *cmd = (char *)"IP";
@@ -357,10 +362,10 @@ int makeClient(client *newClient)
 		return -1;
 	}
 
-	newClient->ip = ipstr;
+	newClient.ip = ipstr;
 	/* The res addrinfo structure contains
 	 * ai_canonname which should be the hostname. */
-	std::strncpy(newClient->hostname, res->ai_canonname, sizeof(newClient->hostname));
+	std::strncpy(newClient.hostname, res->ai_canonname, sizeof(newClient.hostname));
 
 	// create the listening socket for the specified port
 	create_listener(newClient);
