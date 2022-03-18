@@ -44,8 +44,8 @@ struct client
 void shell_success(char *command_str);
 void shell_end(char *command_str);
 void shell_error(char *command_str);
-int makeClient(client *newClient);
-void create_listener(client *newClient);
+int makeClient(client newClient);
+void create_listener(client newClient);
 
 class Process{
     public:

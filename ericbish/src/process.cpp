@@ -30,14 +30,35 @@ Process::Process(char *port)
 }
 
 /* This function will send the list of connected clients to a client 
- * given the server object and the client socket number */
+ * given the server object and the client socket number 
+ * Returns 1 on succes and -1 on failure */
 int Process::send_connected_clients(Process server, int client_socket)
 {
+	// for each connected client send their information in a string with the format:
+	// listening_port|listening_socket|ip|hostname
 	for (std::list<client>::iterator it=server.connected_clients.begin(); it != server.connected_clients.end(); ++it) {
 		char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+		char *delimiter = (char *)'|'; // will this work or will I need to malloc?
+		strcat(buffer, it->listening_port);
+		strcat(buffer, delimiter);
 		
+		// this might not work
+		char *socket = (char *)malloc(sizeof(char) * 6);// 6 because the max port number would be "65535\n"
+		sprintf(socket, "%d", it->listening_socket);
+		// but we're going to try it
+		strcat(buffer, socket); 
+		// hopefully it worked
+		strcat(buffer, delimiter);
+
+		strcat(buffer, it->ip);
+		strcat(buffer, delimiter);
+		strcat(buffer, it->hostname);
+
+		int len = strlen(buffer);
+		// something here to return -1 if send fails
+		send(client_socket, buffer, len, 0);
 	}
-	return 0;
+	return 1;
 }
 
 
@@ -102,13 +123,7 @@ int Process::read_inputs()
 						fdmax = fdaccept;
 
 					// Now if we are instantiated as the server we should send the connected client list to the client
-
-
-
-
-
-
-
+					send_connected_clients(self, );
 					
 				}
 				else
@@ -315,8 +330,10 @@ int makeClient(client newClient)
 	int sockfd, status;
 
 	// load up adress structs with getaddrinfo()
+	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_DGRAM;
+	hints.ai_flags = AI_PASSIVE;
 
 	if ((status = getaddrinfo("8.8.8.8", "53", &hints, &res)) != 0)
 	{
@@ -340,7 +357,7 @@ int makeClient(client newClient)
 	}
 
 	// get my IP Address
-	struct sockaddr_in *myaddr;
+	struct sockaddr_in myaddr;
 	memset(&myaddr, 0, sizeof(myaddr));
 	socklen_t len = sizeof(myaddr);
 	if ((getsockname(sockfd, (struct sockaddr *)&myaddr, &len)) == -1)
@@ -349,7 +366,7 @@ int makeClient(client newClient)
 		return -1;
 	}
 
-	if ((inet_ntop(AF_INET, &myaddr->sin_addr, ipstr, sizeof(ipstr))) == NULL)
+	if ((inet_ntop(AF_INET, &(myaddr.sin_addr), ipstr, sizeof(ipstr))) == NULL)
 	{
 		fprintf(stderr, "IP: inet_ntop error\n");
 		return -1;
@@ -365,6 +382,7 @@ int makeClient(client newClient)
 	newClient.ip = ipstr;
 	/* The res addrinfo structure contains
 	 * ai_canonname which should be the hostname. */
+	//gethostbyaddr()
 	std::strncpy(newClient.hostname, res->ai_canonname, sizeof(newClient.hostname));
 
 	// create the listening socket for the specified port
