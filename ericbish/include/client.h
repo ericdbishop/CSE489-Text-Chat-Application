@@ -10,12 +10,13 @@ public:
     int server_socket;
     int port_listen;
     bool logged_in;
-    std::list<client> connected_clients;
     std::list<client> blocked_clients;
 
     Client(char *port);
     void login(char *server_ip, char *server_port);
     void refresh();
+    char *package_self();
+    void send_to_server(char *buffer);
     void send(char *client_ip, char *msg);
     void broadcast(char *msg);
     void block(char *client_ip);
@@ -28,13 +29,14 @@ public:
     void list();
     int call_command(char *command);
 
+    void client_login(char *buffer);
+
     /***************************
           HELPER FUNCTIONS
     ***************************/
 
     bool isBlocked(char *client_ip);
     int connect_to_host(char *server_ip, char *server_port);
-    void receive_connected_clients(char *buffer);
 };
 
 #endif

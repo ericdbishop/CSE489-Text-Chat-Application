@@ -60,6 +60,7 @@ class Process{
 
 	Process(char *port);
 	int read_inputs();
+	void handle_shell();
 	int call_command(char *command);
 	bool is_valid_ip(char *client_ip);
 	void output(char *cmd, char *format, char *input);
@@ -70,9 +71,11 @@ class Process{
     void port();
     void list();
 	void send_connected_clients(int client_socket);
-	void receive_connected_client(char *buffer);
+	void receive_connected_client(char *buffer, client *newClient);
 	
 	char *package_client(client client_to_package); 
+	
+	void client_login(char *buffer);
 };
 
 #endif

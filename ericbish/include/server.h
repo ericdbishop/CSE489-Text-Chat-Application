@@ -5,6 +5,17 @@
 struct logged_client:client {
   int num_msg_sent, num_msg_rcv;
   char *status;
+  
+  logged_client();
+  logged_client(client to_log){
+    num_msg_sent = 0;
+    num_msg_rcv = 0;
+    status = "logged-in";
+    listening_port = to_log.listening_port;
+    listening_socket = to_log.listening_socket;
+    strncpy(ip, to_log.ip, sizeof(ip));
+    strncpy(hostname, to_log.hostname, sizeof(hostname));
+  }
 };
 
 struct blocked_by:client {
@@ -24,8 +35,10 @@ public:
   void blocked(char *client_ip);
   void event(char *from_client_ip, char *to_client_ip, char *msg);
   int call_command(char *command);
-	int send_connected_clients(int client_socket);
+	void send_connected_clients(int client_socket);
   bool is_valid_ip(char *client_ip);
+
+  void client_login(char *buffer);
 };
 
 #endif

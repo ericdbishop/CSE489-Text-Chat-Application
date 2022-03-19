@@ -35,6 +35,15 @@
 	//}
 //};
 
+void Server::client_login(char *buffer){
+	client *newClient = (client *)malloc(sizeof(client));
+
+	receive_connected_client(buffer, newClient);
+
+  // If the client is not already in the list of logged_clients, add it.
+  //if (find(logged_clients.begin(), logged_clients.end(), newClient)
+  logged_clients.insert(logged_clients.end(), logged_client(*newClient));
+}
 
 int Server::call_command(char *command){
   if (Process::call_command(command) == 0) return 0;

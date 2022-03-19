@@ -31,11 +31,10 @@ Process::Process(char *port)
 
 // receive connected client as string and process it to be stored in the list of client objects
 // "listening_port|listening_socket|ip|hostname"
-void Process::receive_connected_client(char *buffer) {
+void Process::receive_connected_client(char *buffer, client *newClient) {
   char *delimiter = "|";
   char *element_str;
   element_str = strtok(buffer, delimiter);
-  struct client temp; 
   for (int i = 0; i < 4; i++) {
     // error handling - check if there's less than 4 elements
     if (element_str == NULL) {
@@ -46,23 +45,23 @@ void Process::receive_connected_client(char *buffer) {
     switch (i)
     {
     case 0:
-      temp.listening_port = element_str;
+      newClient->listening_port = element_str;
       break;
     case 1:
-      temp.listening_socket = atoi(element_str);
+      newClient->listening_socket = atoi(element_str);
       break;
     case 2:
-      strncpy(temp.ip, element_str, sizeof(temp.ip));
+      strncpy(newClient->ip, element_str, sizeof(newClient->ip));
       break;
     case 3:
-      strncpy(temp.hostname, element_str, sizeof(temp.hostname));
+      strncpy(newClient->hostname, element_str, sizeof(newClient->hostname));
       break;
     default:
       break;
     }
     element_str = strtok(buffer, delimiter);
   }
-    connected_clients.insert(connected_clients.end(), temp);
+    connected_clients.insert(connected_clients.end(), (*newClient));
 }
 
 /* read_inputs() is responsible for calling all other functions and will run so
@@ -93,28 +92,10 @@ int Process::read_inputs()
 		{
 			if (FD_ISSET(i, &readfds))
 			{ // found a file descriptor
+
 				if (i == STDIN)
-				{
-					// HANDLE SHELL COMMANDS
+					handle_shell(); // HANDLE SHELL COMMANDS
 
-					// first we read the command from the command line
-					char *command = (char *)malloc(sizeof(char) * CMD_SIZE);
-					memset(command, '\0', CMD_SIZE);
-					if (fgets(command, CMD_SIZE - 1, stdin) == NULL)
-					{
-						exit(-1);
-					}
-
-					string command_string = std::string(command);
-					command_string.erase(command_string.size()-1,1);
-					//command_string.find('\n')
-					char cmd[command_string.size() + 1];
-					command_string.copy(cmd, command_string.length() + 1);
-					cmd[command_string.length()] = '\0';
-
-					// now we call the corresponding helper functions for each command
-					call_command(cmd);
-				}
 				else if (i == listening_socket) // listener is the servers listening socket fd,
 				{ 
 					// Accept new connections and add them to master set
@@ -130,17 +111,17 @@ int Process::read_inputs()
 					if (fdaccept > fdmax)
 						fdmax = fdaccept;
 
-					// Now if we are instantiated as the server we should receive the clients information,
+					// If this is being called from a server, we should receive the clients information,
 					// put that information into a client structure, then add the structure to the
 					// connected clients list
 					if (program_mode == SERVER) {
 						// 1. receive client information in a buffer - might need to wait a second im not sure
 						char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
 						recv(fdaccept, buffer, BUFFER_SIZE, 0);
-						
-						// 2. proccess the information using receive_connected_client
-						receive_connected_client(buffer);
-
+						// 2. process the information using receive_connected_client
+						// Make sure client is accounted for in logged_clients.
+						client_login(buffer);
+						// newClient should be updated by receive_connected_client to contain the new client information.
 						// 4. send the complete list of connected clients to the client
 						send_connected_clients(fdaccept);
 					}
@@ -169,15 +150,20 @@ int Process::read_inputs()
 					{
 						// Process incoming data from existing clients here ...
 
-
-						if (program_mode == CLIENT /*&& the client logged in/refreshed*/) {
+						// the flag should be set when the client logs in or refreshes
+						if (program_mode == CLIENT /*&& flag */) {
 							// clear connected client list
 							connected_clients.resize(0);
 							
 							// do this next part in a loop - we need a flag in the above if statement to
 							// signal we are done receiving (or else we will just reset our list)
 							// and receive a client continuosly
-							receive_connected_client(buffer);
+							while (strcmp(buffer, "DONE") != 0) {
+								client *newClient = (client *)malloc(sizeof(client));
+								receive_connected_client(buffer, newClient);
+							}
+
+							// TODO set flag to signal done receiving
 						}
 						
 
@@ -194,6 +180,27 @@ int Process::read_inputs()
 			}
 		}
 	}
+}
+
+void Process::handle_shell(){
+	
+	// first we read the command from the command line
+	char *command = (char *)malloc(sizeof(char) * CMD_SIZE);
+	memset(command, '\0', CMD_SIZE);
+	if (fgets(command, CMD_SIZE - 1, stdin) == NULL)
+	{
+		exit(-1);
+	}
+
+	string command_string = std::string(command);
+	command_string.erase(command_string.size()-1,1);
+	//command_string.find('\n')
+	char cmd[command_string.size() + 1];
+	command_string.copy(cmd, command_string.length() + 1);
+	cmd[command_string.length()] = '\0';
+
+	// now we call the corresponding helper functions for each command
+	call_command(cmd);
 }
 
 char *Process::package_client(client client_to_package){
