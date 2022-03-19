@@ -5,7 +5,6 @@
 Client::Client (char *port) : Process(port) {
   // Add self Client object to list of connected clients.
   logged_in = false;
-  connected_clients.insert(connected_clients.begin(), self);
 
  // Sorting isn't neccesary here if self is the only client in the list
  // but for future reference this is how we sort:
@@ -188,6 +187,10 @@ void Client::login(char *server_ip, char *server_port){
   // now we can use server_socket to send and receive data
 
   // on login the server should send the client the list of currently connected clients
+
+  // Maybe server should handle changing connected clients and the client should just request a new list of clients.
+  connected_clients.insert(connected_clients.begin(), self);
+  logged_in = true;
 }
 
 /* Retrieve an updated list of loggin in clients from the server and use it to update connected_clients */
@@ -233,6 +236,10 @@ void Client::logout(){
   char *cmd = (char *)"LOGOUT";
   require_login(cmd);
 
+  // They should not be able to view connected clients and logged_in should be changed to false
+  // connected_clients.remove(self);
+  connected_clients.resize(0);
+  logged_in = false;
 }
 
 void Client::exit(){
