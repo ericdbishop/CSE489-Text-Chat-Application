@@ -68,6 +68,31 @@ int Server::call_command(char *command){
  return 0;
 }
 
+/* This function will send the list of connected clients to a client 
+ * given the server object and the client socket number 
+ * Returns 1 on success and -1 on failure */
+void Server::send_connected_clients(int client_socket)
+{
+	// for each connected client send their information in a string with the format:
+	// listening_port|listening_socket|ip|hostname
+  char *buffer;
+  int len;
+  client currentClient;
+  std::list<client>::iterator it;
+	for (it=connected_clients.begin(); it != connected_clients.end(); ++it) {
+		buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+		client currentClient = (*it);
+    buffer = package_client(currentClient); 
+
+		len = strlen(buffer);
+		send(client_socket, buffer, len, 0);
+	}
+	buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+  strcat(buffer, "DONE\0");
+  len = strlen(buffer);
+  send(client_socket, buffer, len, 0);
+}
+
 /* This works the same as is_valid_ip in process.cpp, except it looks at
  * clients who are logged out and who are logged in. */
 bool Server::is_valid_ip(char *client_ip){

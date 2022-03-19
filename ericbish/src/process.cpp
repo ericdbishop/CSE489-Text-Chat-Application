@@ -29,39 +29,41 @@ Process::Process(char *port)
 	makeClient(&self);
 }
 
-/* This function will send the list of connected clients to a client 
- * given the server object and the client socket number 
- * Returns 1 on succes and -1 on failure */
-int Process::send_connected_clients(Process server, int client_socket)
-{
-	// for each connected client send their information in a string with the format:
-	// listening_port|listening_socket|ip|hostname
-	for (std::list<client>::iterator it=server.connected_clients.begin(); it != server.connected_clients.end(); ++it) {
-		char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
-		char *delimiter = (char *)'|'; // will this work or will I need to malloc?
-		strcat(buffer, it->listening_port);
-		strcat(buffer, delimiter);
-		
-		// this might not work
-		char *socket = (char *)malloc(sizeof(char) * 6);// 6 because the max port number would be "65535\n"
-		sprintf(socket, "%d", it->listening_socket);
-		// but we're going to try it
-		strcat(buffer, socket); 
-		// hopefully it worked
-		strcat(buffer, delimiter);
+// receive connected client as string and process it to be stored in the list of client objects
+// "listening_port|listening_socket|ip|hostname"
+void Process::receive_connected_client(char *buffer) {
+  char *delimiter = "|";
+  char *element_str;
+  element_str = strtok(buffer, delimiter);
+  struct client temp; 
+  for (int i = 0; i < 4; i++) {
+    // error handling - check if there's less than 4 elements
+    if (element_str == NULL) {
+      printf("Client::receive_connected_clients error: didn't receive all 4 elements");
+    }
 
-		strcat(buffer, it->ip);
-		strcat(buffer, delimiter);
-		strcat(buffer, it->hostname);
-
-		int len = strlen(buffer);
-		// something here to return -1 if send fails
-		send(client_socket, buffer, len, 0);
-	}
-	return 1;
+    // process the elements and add them to a temporary client
+    switch (i)
+    {
+    case 0:
+      temp.listening_port = element_str;
+      break;
+    case 1:
+      temp.listening_socket = atoi(element_str);
+      break;
+    case 2:
+      strncpy(temp.ip, element_str, sizeof(temp.ip));
+      break;
+    case 3:
+      strncpy(temp.hostname, element_str, sizeof(temp.hostname));
+      break;
+    default:
+      break;
+    }
+    element_str = strtok(buffer, delimiter);
+  }
+    connected_clients.insert(connected_clients.end(), temp);
 }
-
-
 
 /* read_inputs() is responsible for calling all other functions and will run so
  * long as the program is running  */
@@ -91,7 +93,7 @@ int Process::read_inputs()
 		{
 			if (FD_ISSET(i, &readfds))
 			{ // found a file descriptor
-				if (i == STDIN) 				// BREAKPOINT HERE
+				if (i == STDIN)
 				{
 					// HANDLE SHELL COMMANDS
 
@@ -112,10 +114,9 @@ int Process::read_inputs()
 
 					// now we call the corresponding helper functions for each command
 					call_command(cmd);
-				}								// BREAKPOINT HERE
-				else if (i == listening_socket)
-				{ // listener is the servers listening socket fd,
-				  // I need to figure out how to store this in a variable
+				}
+				else if (i == listening_socket) // listener is the servers listening socket fd,
+				{ 
 					// Accept new connections and add them to master set
 					caddr_len = sizeof(client_addr);
 					fdaccept = accept(listening_socket, (struct sockaddr *)&client_addr, &caddr_len);
@@ -129,18 +130,30 @@ int Process::read_inputs()
 					if (fdaccept > fdmax)
 						fdmax = fdaccept;
 
-					// Now if we are instantiated as the server we should send the connected client list to the client
-					
-					/////////////send_connected_clients(self, fdaccept);
+					// Now if we are instantiated as the server we should receive the clients information,
+					// put that information into a client structure, then add the structure to the
+					// connected clients list
+					if (program_mode == SERVER) {
+						// 1. receive client information in a buffer - might need to wait a second im not sure
+						char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+						recv(fdaccept, buffer, BUFFER_SIZE, 0);
+						
+						// 2. proccess the information using receive_connected_client
+						receive_connected_client(buffer);
+
+						// 4. send the complete list of connected clients to the client
+						send_connected_clients(fdaccept);
+					}
 					
 				}
 				else
 				{
 					// handle data from a client
-					/* Initialize buffer to receieve response */
+					/* Initialize buffer to receive response */
 					char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
 					memset(buffer, '\0', BUFFER_SIZE);
 
+					// See if client disconnected.
 					if (recv(i, buffer, BUFFER_SIZE, 0) <= 0)
 					{
 						close(i);
@@ -148,11 +161,24 @@ int Process::read_inputs()
 
 						/* Remove from watched list */
 						FD_CLR(i, &master);
+
+						// remove from connected clients list TODO
+
 					}
 					else
 					{
 						// Process incoming data from existing clients here ...
 
+
+						if (program_mode == CLIENT /*&& the client logged in/refreshed*/) {
+							// clear connected client list
+							connected_clients.resize(0);
+							
+							// do this next part in a loop - we need a flag in the above if statement to
+							// signal we are done receiving (or else we will just reset our list)
+							// and receive a client continuosly
+							receive_connected_client(buffer);
+						}
 						
 
 						// printf("\nClient sent me: %s\n", buffer);
@@ -170,6 +196,22 @@ int Process::read_inputs()
 	}
 }
 
+char *Process::package_client(client client_to_package){
+	char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+  	char *delimiter = "|";
+
+	strcat(buffer, client_to_package.listening_port);
+	strcat(buffer, delimiter);
+	char *socket = (char *)malloc(sizeof(char) * 6);// 6 because the max port number would be "65535\n"
+	sprintf(socket, "%d", client_to_package.listening_socket);
+	strcat(buffer, socket); 
+	strcat(buffer, delimiter);
+	strcat(buffer, client_to_package.ip);
+	strcat(buffer, delimiter);
+	strcat(buffer, client_to_package.hostname);
+
+	return buffer;
+}
 // call_command determines which function to call based on its input string
 int Process::call_command(char *command)
 {

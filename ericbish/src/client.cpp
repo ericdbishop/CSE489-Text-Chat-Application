@@ -150,11 +150,54 @@ int Client::connect_to_host(char *server_ip, char* server_port)
 	if(connect(fdsocket, res->ai_addr, res->ai_addrlen) < 0)
 		perror("Connect failed");
 	
+  /* Wait and then send information */
+  char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+	buffer = package_self();
+
+  usleep(10000);
+
+  send_to_server(buffer);
+
 	freeaddrinfo(res);
 
 	return fdsocket;
 }
 
+// receive connected client list as string and process it to be stored as a list of client objects
+// "listening_port|listening_socket|ip|hostname"
+void Client::receive_connected_client(char *buffer) {
+  char *delimiter = "|";
+  char *element_str;
+  element_str = strtok(buffer, delimiter);
+  struct client temp; 
+  for (int i = 0; i < 4; i++) {
+    // error handling - check if there's less than 4 elements
+    if (element_str == NULL) {
+      printf("Client::receive_connected_clients error: didn't receive all 4 elements");
+    }
+
+    // process the elements and add them to a temporary client
+    switch (i)
+    {
+    case 0:
+      temp.listening_port = element_str;
+      break;
+    case 1:
+      temp.listening_socket = atoi(element_str);
+      break;
+    case 2:
+      strncpy(temp.ip, element_str, sizeof(temp.ip));
+      break;
+    case 3:
+      strncpy(temp.hostname, element_str, sizeof(temp.hostname));
+      break;
+    default:
+      break;
+    }
+    element_str = strtok(buffer, delimiter);
+  }
+    connected_clients.insert(connected_clients.end(), temp);
+}
 
 void Client::require_login(char *cmd){
   if (!logged_in){

@@ -25,6 +25,9 @@ using namespace std;
 #define BACKLOG 5
 #define BUFFER_SIZE 256
 
+#define SERVER true
+#define CLIENT false
+
 struct client
 {
 	char *listening_port;
@@ -66,7 +69,10 @@ class Process{
 	void ip();
     void port();
     void list();
-	int send_connected_clients(Process server, int client_socket);
+	void send_connected_clients(int client_socket);
+	void receive_connected_client(char *buffer);
+	
+	char *package_client(client client_to_package); 
 };
 
 #endif

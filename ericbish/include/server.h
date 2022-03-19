@@ -24,6 +24,7 @@ public:
   void blocked(char *client_ip);
   void event(char *from_client_ip, char *to_client_ip, char *msg);
   int call_command(char *command);
+	int send_connected_clients(int client_socket);
   bool is_valid_ip(char *client_ip);
 };
 

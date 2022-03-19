@@ -10,6 +10,7 @@ public:
     int server_socket;
     int port_listen;
     bool logged_in;
+    std::list<client> connected_clients;
     std::list<client> blocked_clients;
 
     Client(char *port);
@@ -33,6 +34,7 @@ public:
 
     bool isBlocked(char *client_ip);
     int connect_to_host(char *server_ip, char *server_port);
+    void receive_connected_clients(char *buffer);
 };
 
 #endif
