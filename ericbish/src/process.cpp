@@ -96,7 +96,7 @@ int Process::read_inputs()
 				}
 				else
 				{
-					// handle data from a client
+					// handle incoming data
 					/* Initialize buffer to receive response */
 					char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
 					memset(buffer, '\0', BUFFER_SIZE);
@@ -111,6 +111,8 @@ int Process::read_inputs()
 						FD_CLR(i, &master);
 
 						// remove from connected clients list TODO
+						if (program_mode == SERVER) {
+						}
 
 					}
 					else
@@ -157,7 +159,7 @@ int Process::read_inputs()
 void Process::send_connected_clients(int client_socket)
 {
 	// for each connected client send their information in a string with the format:
-	// listening_port|listening_socket|ip|hostname
+	// msg_type|listening_port|listening_socket|ip|hostname
   char *buffer;
   int len;
   client currentClient;
@@ -250,8 +252,8 @@ void Process::handle_shell(){
  * contains each piece of information separated by the | character. */
 char *Process::package_client(client client_to_package){
   char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
-  char *socket = (char *)malloc(sizeof(char) * 6);// 6 because the max port number would be "65535\n"
-  sprintf(socket, "%d", client_to_package.listening_socket);
+  char *sock = (char *)malloc(sizeof(char) * 6);// 6 because the max port number would be "65535\n"
+  sprintf(sock, "%d", client_to_package.listening_socket);
 
   char *msg_type;
   strcpy(msg_type, "client");
@@ -259,7 +261,7 @@ char *Process::package_client(client client_to_package){
   std::list<char *> segments;
   segments.insert(segments.end(), msg_type);
   segments.insert(segments.end(), client_to_package.listening_port);
-  segments.insert(segments.end(), socket);
+  segments.insert(segments.end(), sock);
   segments.insert(segments.end(), client_to_package.ip);
   segments.insert(segments.end(), client_to_package.hostname);
 

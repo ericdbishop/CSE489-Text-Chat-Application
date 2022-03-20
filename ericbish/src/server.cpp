@@ -13,28 +13,6 @@
 
 #include "../include/server.h"
 
-
-/* logged_client struct contains statistics about each previously loggin in client. 
- * Maintain a list of logged clients for server so that it can call statistics().
- * We should actively maintain the correct order of clients so it goes from
- * smallest to largest port number */
-
-/* each blocked_by structure contains the information of a client and a list of
- * every client they have blocked. This makes it easy to sort the list of
- * blocked clients using the compareClient() comparison. */
-
-/* If we can't just use the compareClient comparison for our logged_client child
- * object then uncomment this code. */
-//class comparelogged_client {
-	//public:
-	///* compareClient provides a sorting function for the connected_clients linked list */
-	//inline bool operator()(const logged_client one, const logged_client two){ // Tutorials online added a & after the object type.
-  //// This should work since logged_client inherits client
-		//if (one.listening_port > two.listening_port) return false;
-		//else return true;
-	//}
-//};
-
 /* The main purpose of client_login is so that when the server receives a login
  * they can decide if this client has already been previously logged into the
  * server */
@@ -46,20 +24,32 @@ void Server::client_login(char *buffer){
   // If the client is not already in the list of logged_clients, add it.
   //if (find(logged_clients.begin(), logged_clients.end(), newClient)
 
-  bool client_is_new;
-  client_is_new = true;
-  std::list<logged_client>::iterator it;
-	for (it=logged_clients.begin(); it != logged_clients.end(); ++it) {
-		logged_client currentClient = (*it);
-    if (strcmp(currentClient.ip, newClient->ip) == 0){
-      // newClient is already in the list of logged clients
-      client_is_new = false;
-      strncpy(currentClient.status, "logged-in", strlen("logged-in")); 
-    }
+  logged_client to_find = logged_client(*newClient);
+	std::list<logged_client>::iterator find_result = find(&to_find);
 
-	}
-  if (client_is_new)
-    logged_clients.insert(logged_clients.end(), logged_client(*newClient));
+  // Client is not logging in for the first time
+  if (strcmp((*find_result).ip, to_find.ip) == 0){
+    strncpy((*find_result).status, "logged-in", strlen("logged-in")); 
+  } else {
+    // Client is logging in for first time
+    logged_clients.insert(logged_clients.end(), to_find);
+  }
+
+}
+
+void Server::client_logout(int sock_fd){
+	std::list<client>::iterator it;
+  for (it=connected_clients.begin(); it != connected_clients.end(); ++it) {
+	  client currentClient = (*it);
+		char *client_sock = (char *)malloc(sizeof(char) * 6);// 6 because the max port number would be "65535\n"			sprintf(client_sock, "%d", currentClient.listening_socket);
+		char *sock = (char *)malloc(sizeof(char) * 6);// 6 because the max port number would be "65535\n"			sprintf(sock, "%d", i);
+    sprintf(sock, "%d", sock_fd);
+    
+
+   	if (strcmp(client_sock, sock) == 0){
+   	  // client logging out						    	  ; 				}
+    }
+  }
 }
 
 int Server::call_command(char *command){
@@ -189,4 +179,28 @@ void Server::event(char *from_client_ip, char *to_client_ip, char *msg) {
   cse4589_print_and_log(format, from_client_ip, to_client_ip, msg);
   shell_end(cmd);
 
+}
+
+// These functions iterate through either logged_clients or connected_clients to
+// find out if it exists. If it is not found, it returns the first element of
+// the list.
+list<logged_client>::iterator Server::find(logged_client *to_find){
+	std::list<logged_client>::iterator it;
+  for (it=logged_clients.begin(); it != logged_clients.end(); ++it) {
+	logged_client currentClient = (*it);
+	  // if client is found in the list of logged clients
+	  if (strcmp(currentClient.ip, to_find->ip) == 0)
+      return it;
+	}
+  return logged_clients.begin();
+}
+list<client>::iterator Server::find(client *to_find){
+	std::list<client>::iterator it;
+  for (it=connected_clients.begin(); it != connected_clients.end(); ++it) {
+	  client currentClient = (*it);
+	  // if client is found in the list of logged clients
+	  if (strcmp(currentClient.ip, to_find->ip) == 0)
+      return it;
+	}
+  return connected_clients.begin();
 }

@@ -2,6 +2,10 @@
 #define SERVER_H_
 #include"process.h"
 
+/* logged_client struct contains statistics about each previously loggin in client. 
+ * Maintain a list of logged clients for server so that it can call statistics().
+ * We should actively maintain the correct order of clients so it goes from
+ * smallest to largest port number */
 struct logged_client:client {
   int num_msg_sent, num_msg_rcv;
   char *status;
@@ -17,6 +21,9 @@ struct logged_client:client {
   }
 };
 
+/* each blocked_by structure contains the information of a client and a list of
+ * every client they have blocked. This makes it easy to sort the list of
+ * blocked clients using the compareClient() comparison. */
 struct blocked_by:client {
   std::list<client> blocked;
 };
@@ -38,6 +45,10 @@ public:
   void send_to_server(char *buffer);
 
   void client_login(char *buffer);
+  void client_logout(int sock_fd);
+
+  std::list<client>::iterator Server::find(client *to_find);
+  std::list<logged_client>::iterator Server::find(logged_client *to_find);
 };
 
 #endif
