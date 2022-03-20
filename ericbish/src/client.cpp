@@ -5,10 +5,109 @@
 Client::Client (char *port) : Process(port) {
   // Add self Client object to list of connected clients.
   logged_in = false;
+  requires_update = true;
 
- // Sorting isn't neccesary here if self is the only client in the list
  // but for future reference this is how we sort:
  // connected_clients.sort(compareClient());
+}
+
+int Client::read_inputs(){
+
+	struct sockaddr_in server_addr;
+	fd_set readfds, master;
+	socklen_t caddr_len;
+	int fdaccept, fdmax = 0;
+
+	// clear the file descriptor sets
+	FD_ZERO(&readfds);
+	FD_ZERO(&master);
+
+	FD_SET(STDIN, &master); // add stdin to the file descriptor set
+
+	while (true)
+	{
+		readfds = master;
+		if (select(fdmax + 1, &readfds, NULL, NULL, NULL) == -1)
+		{
+			fprintf(stderr, "select error\n");
+			// the code in the book makes a call to exit(4)
+			// not sure if this is how we should handle the error though
+		}
+		for (int i = 0; i <= fdmax; i++)
+		{
+			if (FD_ISSET(i, &readfds))
+			{ // found a file descriptor
+
+				if (i == STDIN)
+					handle_shell(); // HANDLE SHELL COMMANDS
+				else if (i == listening_socket) // listening socket fd,
+				{ 
+					// Accept new connections and add them to master set
+					caddr_len = sizeof(server_addr);
+					fdaccept = accept(listening_socket, (struct sockaddr *)&server_addr, &caddr_len);
+					if (fdaccept < 0)
+						perror("Accept failed.");
+
+					printf("\nRemote Host connected!\n");
+
+					/* Add to watched socket list */
+					FD_SET(fdaccept, &master);
+					if (fdaccept > fdmax)
+						fdmax = fdaccept;
+				}
+				else
+				{
+					// handle incoming data from server
+					/* Initialize buffer to receive response */
+					char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+					//Why set this to all terminating bytes?
+					//memset(buffer, '\0', BUFFER_SIZE);
+
+					int nbytes;
+					if (nbytes = recv(i, buffer, BUFFER_SIZE, 0) <= 0)
+					{ // got error or connection closed by client
+					 	if (nbytes == 0)
+						  printf("socket %d hung up", i);
+						else
+						  perror("recv");
+
+						close(i);
+						printf("Remote Host terminated connection!\n");
+
+						/* Remove from watched list */
+						FD_CLR(i, &master);
+					}
+					else
+					{
+						// Process incoming data from existing clients here ...
+
+						// the flag should be set when the client logs in or refreshes
+						if (requires_update) {
+							// clear connected client list
+							connected_clients.resize(0);
+							
+							// do this next part in a loop - we need a flag in the above if statement to
+							// signal we are done receiving (or else we will just reset our list)
+							// and receive a client continuosly
+							while (strcmp(buffer, "DONE") != 0) {
+								client *newClient = (client *)malloc(sizeof(client));
+								receive_connected_client(buffer, newClient);
+							}
+							// TODO set flag to signal done receiving
+						}
+						// printf("\nClient sent me: %s\n", buffer);
+						// printf("ECHOing it back to the remote host ... ");
+						// // I'm pretty sure we don't want to use fdaccept when sending information to the clients
+						// if (send(fdaccept, buffer, strlen(buffer), 0) == strlen(buffer))
+						// 	printf("Done!\n");
+						fflush(stdout);
+					}
+
+					free(buffer);
+				}
+			}
+		}
+	}
 }
 
 // call_command will add a \0 to the end of each input string.

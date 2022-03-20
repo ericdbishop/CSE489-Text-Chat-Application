@@ -37,6 +37,7 @@ public:
   // The process constructor should be called first.
     // Server constructor
   Server (char *port) : Process(port) {}
+	int read_inputs();
   void statistics();
   void blocked(char *client_ip);
   void event(char *from_client_ip, char *to_client_ip, char *msg);
@@ -47,8 +48,8 @@ public:
   void client_login(char *buffer);
   void client_logout(int sock_fd);
 
-  std::list<client>::iterator Server::find(client *to_find);
-  std::list<logged_client>::iterator Server::find(logged_client *to_find);
+  std::list<client>::iterator find(client *to_find);
+  std::list<logged_client>::iterator find(logged_client *to_find);
 };
 
 #endif

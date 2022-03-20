@@ -13,6 +13,112 @@
 
 #include "../include/server.h"
 
+int Server::read_inputs(){
+
+	struct sockaddr_in client_addr;
+	fd_set readfds, master;
+	socklen_t caddr_len;
+	int fdaccept, fdmax = 0;
+
+	// clear the file descriptor sets
+	FD_ZERO(&readfds);
+	FD_ZERO(&master);
+
+	FD_SET(STDIN, &master); // add stdin to the file descriptor set
+
+	while (true)
+	{
+		readfds = master;
+		if (select(fdmax + 1, &readfds, NULL, NULL, NULL) == -1)
+		{
+			fprintf(stderr, "select error\n");
+			// the code in the book makes a call to exit(4)
+			// not sure if this is how we should handle the error though
+		}
+		for (int i = 0; i <= fdmax; i++)
+		{
+			if (FD_ISSET(i, &readfds))
+			{ // found a file descriptor
+
+				if (i == STDIN)
+					handle_shell(); // HANDLE SHELL COMMANDS
+
+				else if (i == listening_socket) // listening socket fd
+				{ 
+					// Accept new connections and add them to master set
+					caddr_len = sizeof(client_addr);
+					fdaccept = accept(listening_socket, (struct sockaddr *)&client_addr, &caddr_len);
+					if (fdaccept < 0)
+						perror("Accept failed.");
+
+					printf("\nRemote Host connected!\n");
+
+					/* Add to watched socket list */
+					FD_SET(fdaccept, &master);
+					if (fdaccept > fdmax)
+						fdmax = fdaccept;
+
+					// We should receive the clients information,
+					// put that information into a client structure, then add the structure to the
+					// connected clients list
+
+					// 1. receive client information in a buffer - might need to wait a second im not sure
+					char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+					recv(fdaccept, buffer, BUFFER_SIZE, 0);
+					// 2. process the information using receive_connected_client
+					// Make sure client is accounted for in logged_clients.
+					client_login(buffer);
+					// newClient should be updated by receive_connected_client to contain the new client information.
+					// 4. send the complete list of connected clients to the client
+					send_connected_clients(fdaccept);
+					}
+					
+				}
+				else
+				{
+					// handle incoming data
+					/* Initialize buffer to receive response */
+					char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+					//Why set this to all terminating bytes?
+					//memset(buffer, '\0', BUFFER_SIZE);
+
+					int nbytes;
+					if (nbytes = recv(i, buffer, BUFFER_SIZE, 0) <= 0)
+					{ // got error or connection closed by client
+					 	if (nbytes == 0)
+						  printf("socket %d hung up", i);
+						else
+						  perror("recv");
+
+						close(i);
+						printf("Remote Host terminated connection!\n");
+
+						/* Remove from watched list */
+						FD_CLR(i, &master);
+
+						// remove from connected clients list TODO
+            client_logout(i);
+
+					}
+					else
+					{
+						// Process incoming data from existing clients here ...
+
+
+						// printf("\nClient sent me: %s\n", buffer);
+						// printf("ECHOing it back to the remote host ... ");
+						// // I'm pretty sure we don't want to use fdaccept when sending information to the clients
+						// if (send(fdaccept, buffer, strlen(buffer), 0) == strlen(buffer))
+						// 	printf("Done!\n");
+						fflush(stdout);
+					}
+				  free(buffer);
+			}
+		}
+	}
+}
+
+
 /* The main purpose of client_login is so that when the server receives a login
  * they can decide if this client has already been previously logged into the
  * server */
@@ -44,7 +150,6 @@ void Server::client_logout(int sock_fd){
 		char *client_sock = (char *)malloc(sizeof(char) * 6);// 6 because the max port number would be "65535\n"			sprintf(client_sock, "%d", currentClient.listening_socket);
 		char *sock = (char *)malloc(sizeof(char) * 6);// 6 because the max port number would be "65535\n"			sprintf(sock, "%d", i);
     sprintf(sock, "%d", sock_fd);
-    
 
    	if (strcmp(client_sock, sock) == 0){
    	  // client logging out						    	  ; 				}

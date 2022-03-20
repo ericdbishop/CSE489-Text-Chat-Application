@@ -42,6 +42,7 @@ struct client
 		else
 			return true;
 	}
+
 };
 
 void shell_success(char *command_str);
@@ -53,7 +54,6 @@ int makeClient(client *newClient);
 class Process{
     public:
 	struct client self;
-	bool program_mode;
 	// listening_socket is the socket fd.
 	int listening_socket;
 	std::list<client> connected_clients;

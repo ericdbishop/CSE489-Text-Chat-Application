@@ -46,8 +46,6 @@
 using namespace std;
 
 #define EXIT_FAILURE 1
-#define SERVER true
-#define CLIENT false
 
 /**
  * main function
@@ -85,12 +83,10 @@ int main(int argc, char **argv)
 	/* Create the client/server object */
 	if (strcmp(argv[1],"s") == 0) {
 		Server program = Server(argv[2]);
-		program.program_mode = SERVER;
 		program.read_inputs();
 	}
 	else if (strcmp(argv[1], "c") == 0) {
 		Client program = Client(argv[2]);
-		program.program_mode = CLIENT;
 		program.read_inputs();
 	}
 	return 0;
