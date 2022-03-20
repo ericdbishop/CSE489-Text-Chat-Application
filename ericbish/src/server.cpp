@@ -35,6 +35,9 @@
 	//}
 //};
 
+/* The main purpose of client_login is so that when the server receives a login
+ * they can decide if this client has already been previously logged into the
+ * server */
 void Server::client_login(char *buffer){
 	client *newClient = (client *)malloc(sizeof(client));
 
@@ -42,7 +45,21 @@ void Server::client_login(char *buffer){
 
   // If the client is not already in the list of logged_clients, add it.
   //if (find(logged_clients.begin(), logged_clients.end(), newClient)
-  logged_clients.insert(logged_clients.end(), logged_client(*newClient));
+
+  bool client_is_new;
+  client_is_new = true;
+  std::list<logged_client>::iterator it;
+	for (it=logged_clients.begin(); it != logged_clients.end(); ++it) {
+		logged_client currentClient = (*it);
+    if (strcmp(currentClient.ip, newClient->ip) == 0){
+      // newClient is already in the list of logged clients
+      client_is_new = false;
+      strncpy(currentClient.status, "logged-in", strlen("logged-in")); 
+    }
+
+	}
+  if (client_is_new)
+    logged_clients.insert(logged_clients.end(), logged_client(*newClient));
 }
 
 int Server::call_command(char *command){
@@ -77,30 +94,6 @@ int Server::call_command(char *command){
  return 0;
 }
 
-/* This function will send the list of connected clients to a client 
- * given the server object and the client socket number 
- * Returns 1 on success and -1 on failure */
-void Server::send_connected_clients(int client_socket)
-{
-	// for each connected client send their information in a string with the format:
-	// listening_port|listening_socket|ip|hostname
-  char *buffer;
-  int len;
-  client currentClient;
-  std::list<client>::iterator it;
-	for (it=connected_clients.begin(); it != connected_clients.end(); ++it) {
-		buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
-		client currentClient = (*it);
-    buffer = package_client(currentClient); 
-
-		len = strlen(buffer);
-		send(client_socket, buffer, len, 0);
-	}
-	buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
-  strcat(buffer, "DONE\0");
-  len = strlen(buffer);
-  send(client_socket, buffer, len, 0);
-}
 
 /* This works the same as is_valid_ip in process.cpp, except it looks at
  * clients who are logged out and who are logged in. */

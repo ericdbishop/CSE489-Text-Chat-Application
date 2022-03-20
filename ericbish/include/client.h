@@ -29,7 +29,6 @@ public:
     void list();
     int call_command(char *command);
 
-    void client_login(char *buffer);
 
     /***************************
           HELPER FUNCTIONS

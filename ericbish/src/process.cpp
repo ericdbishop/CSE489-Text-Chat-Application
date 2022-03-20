@@ -29,40 +29,6 @@ Process::Process(char *port)
 	makeClient(&self);
 }
 
-// receive connected client as string and process it to be stored in the list of client objects
-// "listening_port|listening_socket|ip|hostname"
-void Process::receive_connected_client(char *buffer, client *newClient) {
-  char *delimiter = "|";
-  char *element_str;
-  element_str = strtok(buffer, delimiter);
-  for (int i = 0; i < 4; i++) {
-    // error handling - check if there's less than 4 elements
-    if (element_str == NULL) {
-      printf("Client::receive_connected_clients error: didn't receive all 4 elements");
-    }
-
-    // process the elements and add them to a temporary client
-    switch (i)
-    {
-    case 0:
-      newClient->listening_port = element_str;
-      break;
-    case 1:
-      newClient->listening_socket = atoi(element_str);
-      break;
-    case 2:
-      strncpy(newClient->ip, element_str, sizeof(newClient->ip));
-      break;
-    case 3:
-      strncpy(newClient->hostname, element_str, sizeof(newClient->hostname));
-      break;
-    default:
-      break;
-    }
-    element_str = strtok(buffer, delimiter);
-  }
-    connected_clients.insert(connected_clients.end(), (*newClient));
-}
 
 /* read_inputs() is responsible for calling all other functions and will run so
  * long as the program is running  */
@@ -182,6 +148,71 @@ int Process::read_inputs()
 	}
 }
 
+
+/* This function will send the list of connected clients from the server to a
+ * client given the client socket number.
+ * Returns 1 on success and -1 on failure */
+void Process::send_connected_clients(int client_socket)
+{
+	// for each connected client send their information in a string with the format:
+	// listening_port|listening_socket|ip|hostname
+  char *buffer;
+  int len;
+  client currentClient;
+  std::list<client>::iterator it;
+	for (it=connected_clients.begin(); it != connected_clients.end(); ++it) {
+		buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+		client currentClient = (*it);
+    buffer = package_client(currentClient); 
+
+		len = strlen(buffer);
+		send(client_socket, buffer, len, 0);
+	}
+	buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+  strcat(buffer, "DONE\0");
+  len = strlen(buffer);
+  send(client_socket, buffer, len, 0);
+}
+
+// receive connected client as string and process it to be stored in the list of client objects
+// "listening_port|listening_socket|ip|hostname"
+void Process::receive_connected_client(char *buffer, client *newClient) {
+  char *delimiter;
+  strncpy(delimiter, "|", 2);
+  char *element_str;
+  element_str = strtok(buffer, delimiter);
+
+  for (int i = 0; i < 4; i++) {
+    // error handling - check if there's less than 4 elements
+    if (element_str == NULL) {
+      printf("Client::receive_connected_clients error: didn't receive all 4 elements");
+    }
+
+    // process the elements and add them to a temporary client
+    switch (i)
+    {
+    case 0:
+      newClient->listening_port = element_str;
+      break;
+    case 1:
+      newClient->listening_socket = atoi(element_str);
+      break;
+    case 2:
+      strncpy(newClient->ip, element_str, sizeof(newClient->ip));
+      break;
+    case 3:
+      strncpy(newClient->hostname, element_str, sizeof(newClient->hostname));
+      break;
+    default:
+      break;
+    }
+    element_str = strtok(buffer, delimiter);
+  }
+    connected_clients.insert(connected_clients.end(), (*newClient));
+}
+
+// Retrieve a command from stdin and after handling the newline character, pass
+// it to call_command so that the command can be processed.
 void Process::handle_shell(){
 	
 	// first we read the command from the command line
@@ -194,32 +225,38 @@ void Process::handle_shell(){
 
 	string command_string = std::string(command);
 	command_string.erase(command_string.size()-1,1);
-	//command_string.find('\n')
 	char cmd[command_string.size() + 1];
 	command_string.copy(cmd, command_string.length() + 1);
 	cmd[command_string.length()] = '\0';
 
 	// now we call the corresponding helper functions for each command
-	call_command(cmd);
+	if (call_command(cmd) == -1)
+		perror("Command does not exist");
 }
 
+/* package_client stores all client information into a char * buffer that
+ * contains each piece of information separated by the | character. */
 char *Process::package_client(client client_to_package){
-	char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
-  	char *delimiter = "|";
+  char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+  char *delimiter, *socket;
+  strncpy(delimiter, "|", strlen("|"));
 
-	strcat(buffer, client_to_package.listening_port);
-	strcat(buffer, delimiter);
-	char *socket = (char *)malloc(sizeof(char) * 6);// 6 because the max port number would be "65535\n"
-	sprintf(socket, "%d", client_to_package.listening_socket);
-	strcat(buffer, socket); 
-	strcat(buffer, delimiter);
-	strcat(buffer, client_to_package.ip);
-	strcat(buffer, delimiter);
-	strcat(buffer, client_to_package.hostname);
+  // buffer structure: listening_port|listening_socket|ip|hostname
+  strcat(buffer, client_to_package.listening_port);
+  strcat(buffer, delimiter);
+  socket = (char *)malloc(sizeof(char) * 6);// 6 because the max port number would be "65535\n"
+  sprintf(socket, "%d", client_to_package.listening_socket);
+  strcat(buffer, socket); 
+  strcat(buffer, delimiter);
+  strcat(buffer, client_to_package.ip);
+  strcat(buffer, delimiter);
+  strcat(buffer, client_to_package.hostname);
 
-	return buffer;
+  return buffer;
 }
-// call_command determines which function to call based on its input string
+
+/* call_command determines which command function to call based on its input
+ * string. Return -1 if the given command does not exist. */
 int Process::call_command(char *command)
 {
 	if (strcmp(command, "AUTHOR") == 0)
@@ -238,7 +275,8 @@ int Process::call_command(char *command)
 
 /* This function checks the IP's of connected clients and returns true if the
  * given IP is valid, false other wise. This implementation assumes that the
- * given IP is only valid if it belongs to a logged-in client.  */
+ * given IP is only valid if it belongs to a logged-in client, since it checks
+ * connected_clients */
 bool Process::is_valid_ip(char *client_ip){
 	int acc = 1;
 	std::list<client>::iterator i;
@@ -253,6 +291,9 @@ bool Process::is_valid_ip(char *client_ip){
 }
 
 /* SHELL commands */
+
+/* Both versions of output just combine the shell output and the format string
+ * into a small helper function. output_error is for when something goes wrong */
 void Process::output(char *cmd, char *format, char *input)
 {
 	shell_success(cmd);
@@ -271,6 +312,7 @@ void Process::output_error(char *cmd)
 	shell_end(cmd);
 }
 
+/* Print out author string */
 void Process::author()
 {
 	char *cmd = (char *)"AUTHOR";
@@ -280,30 +322,17 @@ void Process::author()
 	output(cmd, format, name);
 }
 
+/* ip() print out the ip assosciated with this process. */
 void Process::ip()
 {	// uses code from section 6.3 of Beej's Guide to Network Programming
-	/* We still need to have some error handling in here, from how the PA1
-	 * description is written. So we could maybe have a separate helper
-	 * function that we call once when a process begins, to gather its
-	 * hostname and external ip and whatnot, and then everytime the IP
-	 * command is given we can call it again. The helper function will detect
-	 * errors and return -1 if something is wrong. */
-
 	char *cmd = (char *)"IP";
 	char *format = (char *)"IP:%s\n";
-	/* Will this prodcue issues if self has already been defined? */
-	//int result = makeClient(self);
-
-	// if (result == -1)
-	// {
-	// 	shell_error(cmd);
-	// 	return;
-	// }
-	
 	// Print output
 	output(cmd, format, self.ip);
 }
 
+/* port() will print out the port assosciated with this process (client or
+ * server) */
 void Process::port()
 {
 	char *cmd = (char *)"PORT";
@@ -311,7 +340,8 @@ void Process::port()
 	output(cmd, format, atoi(self.listening_port));
 }
 
-/* list() should  */
+/* list() should print out each client in the list of clients connected_clients,
+ * according to the format string */
 void Process::list()
 {
 	int list_id, port_listen;
@@ -335,7 +365,10 @@ void Process::list()
 	shell_end(cmd);
 }
 
-; // End Process class
+// This will not be called unless the process is a server.
+void Process::client_login(char *buffer){}
+
+// End Process class
 
 /* This helper function creates the socket we listen for new connections on,
 	* it should be called during initialization of the Server
