@@ -23,7 +23,7 @@ public:
     void block(char *client_ip);
     void unblock(char *client_ip);
     void logout();
-    void exit();
+    void exit_server();
     void msg_received(char *client_ip, char *msg);
     void require_login(char *cmd);
 

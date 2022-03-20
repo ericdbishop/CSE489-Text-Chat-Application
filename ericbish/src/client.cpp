@@ -123,7 +123,7 @@ int Client::call_command(char *command){
   else if (strcmp(command, "LOGOUT") == 0)
     logout();
   else if (strcmp(command, "EXIT") == 0)
-    exit();
+    exit_server();
   
   if (cmd_and_arguments.length() < 10){
     perror("Command is too short to have valid arguments");
@@ -289,6 +289,7 @@ void Client::login(char *server_ip, char *server_port){
   server_socket = connect_to_host(server_ip, server_port);
   if (server_socket < 0) {
     output_error(cmd);
+    exit(-1);
   }
 
   // now we can use server_socket to send and receive data
@@ -296,14 +297,31 @@ void Client::login(char *server_ip, char *server_port){
   // on login the server should send the client the list of currently connected clients
 
   // Maybe server should handle changing connected clients and the client should just request a new list of clients.
-  connected_clients.insert(connected_clients.begin(), self);
   logged_in = true;
+  shell_success(cmd);
+  shell_end(cmd);
+}
+
+void Client::logout(){
+  char *cmd = (char *)"LOGOUT";
+  require_login(cmd);
+
+  close(server_socket);
+
+  // They should not be able to view connected clients and logged_in should be changed to false
+  // connected_clients.remove(self);
+  connected_clients.resize(0);
+  logged_in = false;
+  shell_success(cmd);
+  shell_end(cmd);
 }
 
 /* Retrieve an updated list of loggin in clients from the server and use it to update connected_clients */
 void Client::refresh(){
   char *cmd = (char *)"REFRESH";
   require_login(cmd);
+  shell_success(cmd);
+  shell_end(cmd);
 }
 
 void Client::send(char *client_ip, char *msg){
@@ -316,11 +334,15 @@ void Client::send(char *client_ip, char *msg){
  * it as a result of this check). */
   char *cmd = (char *)"SEND";
   require_login(cmd);
+  shell_success(cmd);
+  shell_end(cmd);
 }
 
 void Client::broadcast(char *msg){
   char *cmd = (char *)"BROADCAST";
   require_login(cmd);
+  shell_success(cmd);
+  shell_end(cmd);
 
 }
 
@@ -346,6 +368,8 @@ void Client::block(char *client_ip){
   /* TO DO: NOTIFY SERVER */
 
 
+  shell_success(cmd);
+  shell_end(cmd);
 }
 
 void Client::unblock(char *client_ip){
@@ -365,21 +389,16 @@ void Client::unblock(char *client_ip){
   /* TO DO: NOTIFY SERVER */
 
 
+  shell_success(cmd);
+  shell_end(cmd);
 }
 
-void Client::logout(){
-  char *cmd = (char *)"LOGOUT";
-  require_login(cmd);
 
-  // They should not be able to view connected clients and logged_in should be changed to false
-  // connected_clients.remove(self);
-  connected_clients.resize(0);
-  logged_in = false;
-}
-
-void Client::exit(){
+void Client::exit_server(){
   char *cmd = (char *)"EXIT";
 
+  shell_success(cmd);
+  shell_end(cmd);
 }
 
 // msgReceived will handle incoming messages and print/log them

@@ -71,8 +71,6 @@ int Server::read_inputs(){
 					// newClient should be updated by receive_connected_client to contain the new client information.
 					// 4. send the complete list of connected clients to the client
 					send_connected_clients(fdaccept);
-					}
-					
 				}
 				else
 				{
@@ -104,6 +102,23 @@ int Server::read_inputs(){
 					{
 						// Process incoming data from existing clients here ...
 
+            // Determine message type.
+
+            // we got some data from a client
+            /*
+            //BROADCAST:
+            for(int j = 0; j <= fdmax; j++) {
+              // send to everyone!
+              if (FD_ISSET(j, &master)) {
+                // except the listener and ourselves
+                if (j != listening_socket && j != i) {
+                  if (send(j, buffer, nbytes, 0) == -1) {
+                  perror("send");
+                  }
+                }
+              }
+            }
+          */
 
 						// printf("\nClient sent me: %s\n", buffer);
 						// printf("ECHOing it back to the remote host ... ");
@@ -113,6 +128,7 @@ int Server::read_inputs(){
 						fflush(stdout);
 					}
 				  free(buffer);
+        }
 			}
 		}
 	}
