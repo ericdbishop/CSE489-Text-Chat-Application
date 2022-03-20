@@ -15,7 +15,6 @@ public:
     Client(char *port);
     void login(char *server_ip, char *server_port);
     void refresh();
-    char *package_self();
     void send_to_server(char *buffer);
     void send(char *client_ip, char *msg);
     void broadcast(char *msg);

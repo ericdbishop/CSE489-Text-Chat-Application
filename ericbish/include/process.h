@@ -74,6 +74,7 @@ class Process{
 	void receive_connected_client(char *buffer, client *newClient);
 	
 	char *package_client(client client_to_package); 
+	char *package(std::list<char *> segments);
 	
 	void client_login(char *buffer);
 };

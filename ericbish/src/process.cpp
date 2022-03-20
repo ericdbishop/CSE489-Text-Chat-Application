@@ -30,6 +30,7 @@ Process::Process(char *port)
 }
 
 
+
 /* read_inputs() is responsible for calling all other functions and will run so
  * long as the program is running  */
 int Process::read_inputs()
@@ -149,6 +150,7 @@ int Process::read_inputs()
 }
 
 
+
 /* This function will send the list of connected clients from the server to a
  * client given the client socket number.
  * Returns 1 on success and -1 on failure */
@@ -163,7 +165,7 @@ void Process::send_connected_clients(int client_socket)
 	for (it=connected_clients.begin(); it != connected_clients.end(); ++it) {
 		buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
 		client currentClient = (*it);
-    buffer = package_client(currentClient); 
+    	buffer = package_client(currentClient); 
 
 		len = strlen(buffer);
 		send(client_socket, buffer, len, 0);
@@ -174,6 +176,8 @@ void Process::send_connected_clients(int client_socket)
   send(client_socket, buffer, len, 0);
 }
 
+
+
 // receive connected client as string and process it to be stored in the list of client objects
 // "listening_port|listening_socket|ip|hostname"
 void Process::receive_connected_client(char *buffer, client *newClient) {
@@ -182,25 +186,29 @@ void Process::receive_connected_client(char *buffer, client *newClient) {
   char *element_str;
   element_str = strtok(buffer, delimiter);
 
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < 5; i++) {
     // error handling - check if there's less than 4 elements
     if (element_str == NULL) {
-      printf("Client::receive_connected_clients error: didn't receive all 4 elements");
+      printf("Client::receive_connected_clients error: didn't receive all 5 elements");
     }
 
     // process the elements and add them to a temporary client
     switch (i)
     {
-    case 0:
+	case 0:
+	  if (strcmp(element_str, "client"))
+	  	perror("msg_type should be client");
+	  break;
+    case 1:
       newClient->listening_port = element_str;
       break;
-    case 1:
+    case 2:
       newClient->listening_socket = atoi(element_str);
       break;
-    case 2:
+    case 3:
       strncpy(newClient->ip, element_str, sizeof(newClient->ip));
       break;
-    case 3:
+    case 4:
       strncpy(newClient->hostname, element_str, sizeof(newClient->hostname));
       break;
     default:
@@ -210,6 +218,8 @@ void Process::receive_connected_client(char *buffer, client *newClient) {
   }
     connected_clients.insert(connected_clients.end(), (*newClient));
 }
+
+
 
 // Retrieve a command from stdin and after handling the newline character, pass
 // it to call_command so that the command can be processed.
@@ -234,26 +244,43 @@ void Process::handle_shell(){
 		perror("Command does not exist");
 }
 
+
+
 /* package_client stores all client information into a char * buffer that
  * contains each piece of information separated by the | character. */
 char *Process::package_client(client client_to_package){
   char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
-  char *delimiter, *socket;
+  char *socket = (char *)malloc(sizeof(char) * 6);// 6 because the max port number would be "65535\n"
+  sprintf(socket, "%d", client_to_package.listening_socket);
+
+  char *msg_type;
+  strcpy(msg_type, "client");
+  // buffer structure: msg_type|listening_port|listening_socket|ip|hostname
+  std::list<char *> segments;
+  segments.insert(segments.end(), msg_type);
+  segments.insert(segments.end(), client_to_package.listening_port);
+  segments.insert(segments.end(), socket);
+  segments.insert(segments.end(), client_to_package.ip);
+  segments.insert(segments.end(), client_to_package.hostname);
+
+  strcpy(buffer, package(segments));
+  return buffer;
+}
+
+char *Process::package(std::list<char *> segments){
+  char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+  char *delimiter;
   strncpy(delimiter, "|", strlen("|"));
 
-  // buffer structure: listening_port|listening_socket|ip|hostname
-  strcat(buffer, client_to_package.listening_port);
-  strcat(buffer, delimiter);
-  socket = (char *)malloc(sizeof(char) * 6);// 6 because the max port number would be "65535\n"
-  sprintf(socket, "%d", client_to_package.listening_socket);
-  strcat(buffer, socket); 
-  strcat(buffer, delimiter);
-  strcat(buffer, client_to_package.ip);
-  strcat(buffer, delimiter);
-  strcat(buffer, client_to_package.hostname);
+  std::list<char *>::iterator it;
+	for (it=segments.begin(); it != segments.end(); ++it) {
+	  strcat(buffer, (*it));
+      strcat(buffer, delimiter);
+    }
 
   return buffer;
 }
+
 
 /* call_command determines which command function to call based on its input
  * string. Return -1 if the given command does not exist. */
@@ -272,6 +299,8 @@ int Process::call_command(char *command)
 
 	return 0;
 }
+
+
 
 /* This function checks the IP's of connected clients and returns true if the
  * given IP is valid, false other wise. This implementation assumes that the

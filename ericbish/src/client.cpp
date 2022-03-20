@@ -150,9 +150,9 @@ int Client::connect_to_host(char *server_ip, char* server_port)
 	if(connect(fdsocket, res->ai_addr, res->ai_addrlen) < 0)
 		perror("Connect failed");
 	
-  /* Wait and then send information */
+  /* Wait and then send information, as the server should be awaiting our information at this point*/
   char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
-	buffer = package_self();
+	buffer = package_client(self);
 
   usleep(10000);
 
@@ -163,10 +163,7 @@ int Client::connect_to_host(char *server_ip, char* server_port)
 	return fdsocket;
 }
 
-char *package_self(){
-
-}
-void send_to_server(char *buffer){
+void Client::send_to_server(char *buffer){
 
 }
 
@@ -175,9 +172,6 @@ void Client::require_login(char *cmd){
     shell_error(cmd);
   }
 }
-/* Invalid IP address. Valid IP address which does not exist in the local copy
- * of the list of logged-in clients (This list may be outdated. Do not update
- * it as a result of this check). Client with IP address: <client-ip> is already blocked. */
   
 /* A client should not accept any other command, except LOGIN, EXIT, IP, PORT,
  * and AUTHOR, or receive packets, unless it is successfully logged in to the
@@ -214,6 +208,13 @@ void Client::refresh(){
 }
 
 void Client::send(char *client_ip, char *msg){
+/* Exceptions:
+
+ * Invalid IP address. 
+
+ * Valid IP address which does not exist in the local copy
+ * of the list of logged-in clients (This list may be outdated. Do not update
+ * it as a result of this check). */
   char *cmd = (char *)"SEND";
   require_login(cmd);
 }
@@ -225,9 +226,20 @@ void Client::broadcast(char *msg){
 }
 
 void Client::block(char *client_ip){
+/* Exceptions:
+ * 
+ * Invalid IP address. 
+ * 
+ * Valid IP address which does not exist in the local copy
+ * of the list of logged-in clients (This list may be outdated. Do not update
+ * it as a result of this check). 
+ * 
+ * Client with IP address: <client-ip> is already blocked.   */
+
   char *cmd = (char *)"BLOCK";
   require_login(cmd);
 
+  /* */
   if (isBlocked(client_ip)){
     shell_error(cmd);
   }
@@ -238,6 +250,16 @@ void Client::block(char *client_ip){
 }
 
 void Client::unblock(char *client_ip){
+/* Exceptions:
+ * 
+ * Invalid IP address. 
+ * 
+ * Valid IP address which does not exist in the local copy
+ * of the list of logged-in clients (This list may be outdated. Do not update
+ * it as a result of this check). 
+ * 
+ * Client with IP address: <client-ip> is not blocked.   */
+
   char *cmd = (char *)"UNBLOCK";
   require_login(cmd);
 
