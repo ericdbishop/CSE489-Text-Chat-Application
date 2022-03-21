@@ -8,17 +8,17 @@
  * smallest to largest port number */
 struct logged_client:client {
   int num_msg_sent, num_msg_rcv;
-  char *status;
+  char status[12];
   std::list<char *> buffered_messages;
   
   logged_client(client to_log){
     num_msg_sent = 0;
     num_msg_rcv = 0;
-    strncpy(status, "logged-in", strlen("logged-in"));
-    strncpy(listening_port, to_log.listening_port, sizeof(to_log.listening_port));
+    strcpy(status, "logged-in");
+    strcpy(listening_port, to_log.listening_port);
     listening_socket = to_log.listening_socket;
-    strncpy(ip, to_log.ip, sizeof(ip));
-    strncpy(hostname, to_log.hostname, sizeof(hostname));
+    strcpy(ip, to_log.ip);
+    strcpy(hostname, to_log.hostname);
   }
 };
 

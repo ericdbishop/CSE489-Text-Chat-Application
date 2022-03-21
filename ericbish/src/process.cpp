@@ -23,10 +23,13 @@ using namespace std;
 Process::Process(char *port)
 {
 	//memset(&self, 0, sizeof(client));
-	strncpy(self.listening_port, port, sizeof(port));
+	strcpy(self.listening_port, port);
 
 	/* Fill in the details for the self Client object */
 	makeClient(&self);
+
+	/* Define listening socket value */
+	listening_socket = self.listening_socket;
 }
 
 
@@ -75,8 +78,8 @@ void Process::receive_connected_client(char *buffer, client *newClient) {
 
 
 std::list<char *> Process::unpack(char * buffer){
-  char *delimiter;
-  strncpy(delimiter, "|", 2);
+  char delimiter[2];
+  strcpy(delimiter, "|");
 
   char *element_str;
   element_str = strtok(buffer, delimiter);
@@ -141,8 +144,8 @@ char *Process::package_client(client client_to_package){
 
 char *Process::package(std::list<char *> segments){
   char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
-  char *delimiter;
-  strncpy(delimiter, "|", strlen("|"));
+  char delimiter[2];
+  strcpy(delimiter, "|");
 
   std::list<char *>::iterator it;
 	for (it=segments.begin(); it != segments.end(); ++it) {
@@ -159,8 +162,8 @@ char *Process::package(std::list<char *> segments){
  * determine_msg_type will return the type of the message in the buffer. It
  * won't guarantee that the message type is not malformed/doesn't exist. */
 char *Process::determine_msg_type(char *buffer){
-  char *delimiter;
-  strncpy(delimiter, "|", 2);
+  char delimiter[2];
+  strcpy(delimiter, "|");
   char *msg_type;
   msg_type = strtok(buffer, delimiter);
 
