@@ -40,30 +40,6 @@ int Process::read_inputs()
 
 
 
-/* This function will send the list of connected clients from the server to a
- * client given the client socket number.
- * Returns 1 on success and -1 on failure */
-void Process::send_connected_clients(int client_socket)
-{
-	// for each connected client send their information in a string with the format:
-	// msg_type|listening_port|listening_socket|ip|hostname
-  char *buffer;
-  int len;
-  client currentClient;
-  std::list<client>::iterator it;
-	for (it=connected_clients.begin(); it != connected_clients.end(); ++it) {
-		buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
-		client currentClient = (*it);
-    	buffer = package_client(currentClient); 
-
-		len = strlen(buffer);
-		send(client_socket, buffer, len, 0);
-	}
-	buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
-  strcat(buffer, "DONE\0");
-  len = strlen(buffer);
-  send(client_socket, buffer, len, 0);
-}
 
 
 
@@ -170,6 +146,18 @@ char *Process::package(std::list<char *> segments){
   return buffer;
 }
 
+char *Process::determine_msg_type(char *buffer){
+  char *delimiter;
+  strncpy(delimiter, "|", 2);
+  char *msg_type;
+  msg_type = strtok(buffer, delimiter);
+
+  if (msg_type == NULL) {
+    printf("determine_msg_type: strok returned NULL");
+  }
+
+  return(msg_type);
+}
 
 /* call_command determines which command function to call based on its input
  * string. Return -1 if the given command does not exist. */
@@ -282,9 +270,6 @@ void Process::list()
 	}
 	shell_end(cmd);
 }
-
-// This will not be called unless the process is a server.
-void Process::client_login(char *buffer){}
 
 // End Process class
 

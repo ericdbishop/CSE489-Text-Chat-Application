@@ -44,6 +44,7 @@ public:
   int call_command(char *command);
   bool is_valid_ip(char *client_ip);
   void send_to_server(char *buffer);
+	void send_connected_clients(int client_socket);
 
   void client_login(char *buffer);
   void client_logout(int sock_fd);
