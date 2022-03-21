@@ -26,8 +26,6 @@ int Client::read_inputs(){
 
 	FD_SET(STDIN, &master); // add stdin to the file descriptor set
 
-	FD_SET(server_socket, &master);
-
 	while (true)
 	{
 		readfds = master;
@@ -63,7 +61,7 @@ int Client::read_inputs(){
 					if (fdaccept > fdmax)
 						fdmax = fdaccept;
 				}
-				else if (FD_ISSET(server_socket, &readfds))
+				else
 				{
 					// handle incoming data from server
 					/* Initialize buffer to receive response */
@@ -260,7 +258,7 @@ int Client::connect_to_host(char *server_ip, char* server_port)
   char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
 	buffer = package_client(self);
 
-  usleep(10000);
+  //usleep(10000);
 
   send_to_server(buffer);
 

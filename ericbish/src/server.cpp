@@ -13,6 +13,8 @@
 
 #include "../include/server.h"
 
+/* read_inputs() is responsible for calling all other functions and will run so
+ * long as the program is running. Much of this is taken from/based off of the bgnet guide */
 int Server::read_inputs(){
 
 	struct sockaddr_in client_addr;
@@ -193,7 +195,7 @@ void Server::client_login(char *buffer){
 
   // Client is not logging in for the first time
   if (strcmp((*find_result).ip, to_find.ip) == 0){
-    strncpy((*find_result).status, "logged-in", strlen("logged-in")); 
+    strcpy((*find_result).status, "logged-in"); 
   } else {
     // Client is logging in for first time
     logged_clients.insert(logged_clients.end(), to_find);
