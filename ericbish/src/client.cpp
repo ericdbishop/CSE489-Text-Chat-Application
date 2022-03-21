@@ -157,7 +157,7 @@ int Client::call_command(char *command){
       perror("Invalid IP");
     }
 
-    send(client_ip, msg);
+    send_msg(client_ip, msg);
   }
   else if (cmd_and_arguments.find("LOGIN") != std::string::npos) {
     cmd = cmd_and_arguments.substr(0,5);
@@ -260,16 +260,16 @@ int Client::connect_to_host(char *server_ip, char* server_port)
 
   //usleep(10000);
 
-  send_to_server(buffer);
+  send(fdsocket, buffer, strlen(buffer), 0);
 
 	freeaddrinfo(res);
 
 	return fdsocket;
 }
 
-void Client::send_to_server(char *buffer){
-
-}
+//void Client::send_to_server(char *buffer){
+//
+//}
 
 void Client::require_login(char *cmd){
   if (!logged_in){
@@ -329,7 +329,7 @@ void Client::refresh(){
   shell_end(cmd);
 }
 
-void Client::send(char *client_ip, char *msg){
+void Client::send_msg(char *client_ip, char *msg){
 /* Exceptions:
 
  * Invalid IP address. 

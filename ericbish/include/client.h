@@ -17,8 +17,8 @@ public:
 	int read_inputs();
     void login(char *server_ip, char *server_port);
     void refresh();
-    void send_to_server(char *buffer);
-    void send(char *client_ip, char *msg);
+    //void send_to_server(char *buffer);
+    void send_msg(char *client_ip, char *msg);
     void broadcast(char *msg);
     void block(char *client_ip);
     void unblock(char *client_ip);
