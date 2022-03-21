@@ -59,8 +59,7 @@ class Process{
 	std::list<client> connected_clients;
 
 	Process(char *port);
-	int read_inputs();
-	void handle_shell();
+	char *handle_shell();
 	int call_command(char *command);
 	bool is_valid_ip(char *client_ip);
 	void output(char *cmd, char *format, char *input);

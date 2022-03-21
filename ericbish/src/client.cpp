@@ -38,8 +38,12 @@ int Client::read_inputs(){
 			if (FD_ISSET(i, &readfds))
 			{ // found a file descriptor
 
-				if (i == STDIN)
-					handle_shell(); // HANDLE SHELL COMMANDS
+				if (i == STDIN) {
+          // Handle shell input
+	        // now we call the corresponding helper functions for each command
+	        if (call_command(handle_shell()) == -1)
+		        perror("Command does not exist");
+        }
 				else if (i == listening_socket) // listening socket fd,
 				{ 
 					// Accept new connections and add them to master set
@@ -220,7 +224,7 @@ int Client::call_command(char *command){
 
     broadcast(msg);
   }
- return -1;
+  else return -1;
 
  return 0;
 }

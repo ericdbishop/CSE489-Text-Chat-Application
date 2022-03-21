@@ -31,14 +31,6 @@ Process::Process(char *port)
 
 
 
-/* read_inputs() is responsible for calling all other functions and will run so
- * long as the program is running. Much of this is taken from/based off of the bgnet guide */
-int Process::read_inputs()
-{
-	return -1;
-}
-
-
 // receive connected client as string and process it to be stored in the list of client objects
 // "msg_type|listening_port|listening_socket|ip|hostname"
 void Process::receive_connected_client(char *buffer, client *newClient) {
@@ -104,7 +96,7 @@ std::list<char *> Process::unpack(char * buffer){
 
 // Retrieve a command from stdin and after handling the newline character, pass
 // it to call_command so that the command can be processed.
-void Process::handle_shell(){
+char *Process::handle_shell(){
 	
 	// first we read the command from the command line
 	char *command = (char *)malloc(sizeof(char) * CMD_SIZE);
@@ -120,9 +112,7 @@ void Process::handle_shell(){
 	command_string.copy(cmd, command_string.length() + 1);
 	cmd[command_string.length()] = '\0';
 
-	// now we call the corresponding helper functions for each command
-	if (call_command(cmd) == -1)
-		perror("Command does not exist");
+	return cmd;
 }
 
 

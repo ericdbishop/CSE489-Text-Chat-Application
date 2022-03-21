@@ -40,9 +40,12 @@ int Server::read_inputs(){
 			if (FD_ISSET(i, &readfds))
 			{ // found a file descriptor
 
-				if (i == STDIN)
-					handle_shell(); // HANDLE SHELL COMMANDS
-
+				if (i == STDIN) {
+          // Handle shell input
+	        // now we call the corresponding helper functions for each command
+	        if (call_command(handle_shell()) == -1)
+		        perror("Command does not exist");
+        }
 				else if (i == listening_socket) // listening socket fd
 				{ 
 					// Accept new connections and add them to master set
@@ -63,6 +66,7 @@ int Server::read_inputs(){
 					// connected clients list
 
 					// 1. receive client information in a buffer - might need to wait a second im not sure
+          printf("receiving new connection\n");
 					char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
 					recv(fdaccept, buffer, BUFFER_SIZE, 0);
 					// 2. process the information using receive_connected_client
