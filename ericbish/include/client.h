@@ -5,8 +5,8 @@
 class Client : public Process
 {
 public:
-    char *server_ip;
-    char *server_port;
+    char server_ip[INET_ADDRSTRLEN];
+    char server_port[5];
     int server_socket;
     int port_listen;
     bool logged_in;

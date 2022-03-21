@@ -11,6 +11,8 @@ Client::Client (char *port) : Process(port) {
  // connected_clients.sort(compareClient());
 }
 
+/* read_inputs() is responsible for calling all other functions and will run so
+ * long as the program is running. Much of this is taken from/based off of the bgnet guide */
 int Client::read_inputs(){
 
 	struct sockaddr_in server_addr;
@@ -173,13 +175,12 @@ int Client::call_command(char *command){
     port.copy(s_port, port.length() + 1);
     s_port[port.length()] = '\0';
 
-    //Check if the server IP and port is correct
-    if (strcmp(s_ip, server_ip) != 0) {
-      perror("Invalid IP");
-    } else if (strcmp(s_port, server_port) != 0) {
-      perror("Invalid port");
-    }
+    // These will be our server ip and port
+    strcpy(server_ip, s_ip);
+    strcpy(server_port, s_port);
 
+    printf(server_ip);
+    printf(server_port);
     login(server_ip, server_port);
   }
   else if (cmd_and_arguments.find("BLOCK") != std::string::npos) {

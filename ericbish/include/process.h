@@ -30,7 +30,7 @@ using namespace std;
 
 struct client
 {
-	char *listening_port;
+	char listening_port[5];
 	int listening_socket;
 	char ip[INET_ADDRSTRLEN];
 	char hostname[128];

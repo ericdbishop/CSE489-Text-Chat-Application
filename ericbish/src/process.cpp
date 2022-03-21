@@ -23,7 +23,7 @@ using namespace std;
 Process::Process(char *port)
 {
 	//memset(&self, 0, sizeof(client));
-	self.listening_port = port;
+	strncpy(self.listening_port, port, sizeof(port));
 
 	/* Fill in the details for the self Client object */
 	makeClient(&self);
@@ -54,7 +54,7 @@ void Process::receive_connected_client(char *buffer, client *newClient) {
 	  	perror("msg_type should be client");
 	  break;
     case 1:
-      newClient->listening_port = element_str;
+      strncpy(newClient->listening_port, element_str, sizeof(newClient->listening_port));
       break;
     case 2:
       newClient->listening_socket = atoi(element_str);
@@ -112,7 +112,8 @@ char *Process::handle_shell(){
 	command_string.copy(cmd, command_string.length() + 1);
 	cmd[command_string.length()] = '\0';
 
-	return cmd;
+	strcpy(command,cmd);
+	return command;
 }
 
 
@@ -124,11 +125,11 @@ char *Process::package_client(client client_to_package){
   char *sock = (char *)malloc(sizeof(char) * 6);// 6 because the max port number would be "65535\n"
   sprintf(sock, "%d", client_to_package.listening_socket);
 
-  char *msg_type;
-  strcpy(msg_type, "client");
+  //char *msg_type = (char *)"client";
+  //strcpy(msg_type, "client");
   // buffer structure: msg_type|listening_port|listening_socket|ip|hostname
   std::list<char *> segments;
-  segments.insert(segments.end(), msg_type);
+  segments.insert(segments.end(), (char *)"client");
   segments.insert(segments.end(), client_to_package.listening_port);
   segments.insert(segments.end(), sock);
   segments.insert(segments.end(), client_to_package.ip);
@@ -198,6 +199,8 @@ int Process::call_command(char *command)
  * connected_clients */
 bool Process::is_valid_ip(char *client_ip){
 	int acc = 1;
+	if (strcmp(client_ip,self.ip) == 0)
+		return true;
 	std::list<client>::iterator i;
 	for (i = connected_clients.begin(); i != connected_clients.end(); ++i)
 	{
