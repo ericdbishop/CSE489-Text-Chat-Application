@@ -9,6 +9,7 @@
 struct logged_client:client {
   int num_msg_sent, num_msg_rcv;
   char *status;
+  std::list<char *> buffered_messages;
   
   logged_client(client to_log){
     num_msg_sent = 0;
@@ -40,7 +41,7 @@ public:
 	int read_inputs();
   void statistics();
   void blocked(char *client_ip);
-  void event(char *from_client_ip, char *to_client_ip, char *msg);
+  void event(char *buffer);
   int call_command(char *command);
   bool is_valid_ip(char *client_ip);
   void send_to_server(char *buffer);

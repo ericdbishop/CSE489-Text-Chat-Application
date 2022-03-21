@@ -39,24 +39,21 @@ int Process::read_inputs()
 }
 
 
-
-
-
-
 // receive connected client as string and process it to be stored in the list of client objects
-// "listening_port|listening_socket|ip|hostname"
+// "msg_type|listening_port|listening_socket|ip|hostname"
 void Process::receive_connected_client(char *buffer, client *newClient) {
-  char *delimiter;
-  strncpy(delimiter, "|", 2);
   char *element_str;
-  element_str = strtok(buffer, delimiter);
+  std::list<char *> segments = unpack(buffer);
 
+  std::list<char *>::iterator it;
+  it = segments.begin();
   for (int i = 0; i < 5; i++) {
     // error handling - check if there's less than 4 elements
-    if (element_str == NULL) {
+    if (it == segments.end()) {
       printf("Client::receive_connected_clients error: didn't receive all 5 elements");
     }
 
+	element_str = (*it);
     // process the elements and add them to a temporary client
     switch (i)
     {
@@ -79,9 +76,28 @@ void Process::receive_connected_client(char *buffer, client *newClient) {
     default:
       break;
     }
-    element_str = strtok(buffer, delimiter);
   }
     connected_clients.insert(connected_clients.end(), (*newClient));
+}
+
+
+
+std::list<char *> Process::unpack(char * buffer){
+  char *delimiter;
+  strncpy(delimiter, "|", 2);
+
+  char *element_str;
+  element_str = strtok(buffer, delimiter);
+
+  std::list<char *> segments;
+
+  while (element_str) {
+	segments.insert(segments.end(), element_str);
+
+    element_str = strtok(NULL, delimiter);
+  }
+
+  return segments;
 }
 
 
@@ -92,7 +108,7 @@ void Process::handle_shell(){
 	
 	// first we read the command from the command line
 	char *command = (char *)malloc(sizeof(char) * CMD_SIZE);
-	memset(command, '\0', CMD_SIZE);
+	std::memset(command, '\0', CMD_SIZE);
 	if (fgets(command, CMD_SIZE - 1, stdin) == NULL)
 	{
 		exit(-1);
@@ -146,6 +162,11 @@ char *Process::package(std::list<char *> segments){
   return buffer;
 }
 
+
+
+/* Message types: client, message, refresh, block, unblock, exit?, logout? 
+ * determine_msg_type will return the type of the message in the buffer. It
+ * won't guarantee that the message type is not malformed/doesn't exist. */
 char *Process::determine_msg_type(char *buffer){
   char *delimiter;
   strncpy(delimiter, "|", 2);
@@ -158,6 +179,8 @@ char *Process::determine_msg_type(char *buffer){
 
   return(msg_type);
 }
+
+
 
 /* call_command determines which command function to call based on its input
  * string. Return -1 if the given command does not exist. */
@@ -283,7 +306,7 @@ void create_listener(client *newClient) {
 	fd_set master_list, watch_list;
 
 	/* Set up hints structure */
-	memset(&hints, 0, sizeof(hints));
+	std::memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
@@ -326,7 +349,7 @@ int makeClient(client *newClient)
 	int sockfd, status;
 
 	// load up adress structs with getaddrinfo()
-	memset(&hints, 0, sizeof hints);
+	std::memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_DGRAM;
 	hints.ai_flags = AI_PASSIVE;
@@ -354,7 +377,7 @@ int makeClient(client *newClient)
 
 	// get my IP Address
 	struct sockaddr_in myaddr;
-	memset(&myaddr, 0, sizeof(myaddr));
+	std::memset(&myaddr, 0, sizeof(myaddr));
 	socklen_t len = sizeof(myaddr);
 	if ((getsockname(sockfd, (struct sockaddr *)&myaddr, &len)) == -1)
 	{

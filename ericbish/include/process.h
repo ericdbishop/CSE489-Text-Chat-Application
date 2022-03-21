@@ -75,6 +75,7 @@ class Process{
 	char *determine_msg_type(char *buffer);
 	char *package_client(client client_to_package); 
 	char *package(std::list<char *> segments);
+  	std::list<char *> unpack(char * buffer);
 	
 };
 

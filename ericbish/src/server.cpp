@@ -103,6 +103,20 @@ int Server::read_inputs(){
 						// Process incoming data from existing clients here ...
 
             // Determine message type.
+            /* Message types: client, message, refresh, block, unblock, exit?, logout? */ 
+            char *msg = determine_msg_type(buffer);
+
+            if (strcmp(msg, "message") == 0) {
+              event(buffer);
+            } else if (strcmp(msg, "refresh") == 0) {
+
+            } else if (strcmp(msg, "block") == 0) {
+
+            } else if (strcmp(msg, "unblock") == 0) {
+
+            } else if (strcmp(msg, "exit") == 0) {
+
+            }
 
             // we got some data from a client
             /*
@@ -134,6 +148,30 @@ int Server::read_inputs(){
 	}
 }
 
+/* This function will send the list of connected clients from the server to a
+ * client given the client socket number.
+ * Returns 1 on success and -1 on failure */
+void Server::send_connected_clients(int client_socket)
+{
+	// for each connected client send their information in a string with the format:
+	// msg_type|listening_port|listening_socket|ip|hostname
+  char *buffer;
+  int len;
+  client currentClient;
+  std::list<client>::iterator it;
+	for (it=connected_clients.begin(); it != connected_clients.end(); ++it) {
+		buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+		client currentClient = (*it);
+    	buffer = package_client(currentClient); 
+
+		len = strlen(buffer);
+		send(client_socket, buffer, len, 0);
+	}
+	buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+  strcat(buffer, "DONE\0");
+  len = strlen(buffer);
+  send(client_socket, buffer, len, 0);
+}
 
 /* The main purpose of client_login is so that when the server receives a login
  * they can decide if this client has already been previously logged into the
@@ -292,9 +330,26 @@ void Server::blocked(char *client_ip) {
 /* The event function will handle output when a client sends a message 
  * which is routed through the server. In the case of a broadcast message,
  * the to_client_ip should be 255.255.255.255 */
-void Server::event(char *from_client_ip, char *to_client_ip, char *msg) {
+void Server::event(char *buffer) {
+  char *from_client_ip, *to_client_ip, *msg;
   char *format = (char *)"%-5d%-35s%-8d%-8d%-8s\n";
   char *cmd = (char *)"RELAYED";
+  char *broadcast_ip = (char *)"255.255.255.255";
+  std::list<char *> segments = unpack(buffer);
+
+  std::list<char *>::iterator it = segments.begin();
+  it++;
+
+  // messages structure: "message"|src_ip|dest_ip|msg
+  from_client_ip = (*(it++));
+  to_client_ip = (*(it++));
+  msg = (*it);
+
+  if (strcmp(broadcast_ip, to_client_ip) == 0) { // BROADCAST
+
+  } else { // SEND
+
+  }
 
   shell_success(cmd);
   cse4589_print_and_log(format, from_client_ip, to_client_ip, msg);
