@@ -2,7 +2,13 @@
 #include "../include/logger.h"
 #include "../include/client.h"
 
-Client::Client (char *port) : Process(port) {
+Client::Client (char *port){
+	//memset(&self, 0, sizeof(client));
+	strcpy(self.listening_port, port);
+
+	/* Fill in the details for the self Client object */
+	makeClient(&self);
+
   // Add self Client object to list of connected clients.
   logged_in = false;
   requires_update = true;
@@ -25,6 +31,13 @@ int Client::read_inputs(){
 	FD_ZERO(&master);
 
 	FD_SET(STDIN, &master); // add stdin to the file descriptor set
+
+ // This might not be neccesary in client
+	/* Define listening socket value */
+  create_listener(&self);
+
+	listening_socket = self.listening_socket;
+	FD_SET(listening_socket, &master); // add stdin to the file descriptor set
 
 	while (true)
 	{
@@ -131,9 +144,6 @@ int Client::call_command(char *command){
   else if (strcmp(command, "EXIT") == 0)
     exit_server();
   
-  if (cmd_and_arguments.length() < 10){
-    perror("Command is too short to have valid arguments");
-  }
 
   if (cmd_and_arguments.find("SEND") != std::string::npos) {
     cmd = cmd_and_arguments.substr(0,4);
@@ -179,8 +189,6 @@ int Client::call_command(char *command){
     strcpy(server_ip, s_ip);
     strcpy(server_port, s_port);
 
-    printf(server_ip);
-    printf(server_port);
     login(server_ip, server_port);
   }
   else if (cmd_and_arguments.find("BLOCK") != std::string::npos) {
@@ -258,7 +266,7 @@ int Client::connect_to_host(char *server_ip, char* server_port)
   char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
 	buffer = package_client(self);
 
-  //usleep(10000);
+  usleep(100000);
 
   send(fdsocket, buffer, strlen(buffer), 0);
 
@@ -271,10 +279,12 @@ int Client::connect_to_host(char *server_ip, char* server_port)
 //
 //}
 
-void Client::require_login(char *cmd){
+int Client::require_login(char *cmd){
   if (!logged_in){
     shell_error(cmd);
+    return -1;
   }
+  return 0;
 }
   
 /* A client should not accept any other command, except LOGIN, EXIT, IP, PORT,
@@ -285,7 +295,8 @@ void Client::require_login(char *cmd){
  * call parent function. */
 void Client::list() {
   char *cmd = (char *)"LIST";
-  require_login(cmd);
+  if (require_login(cmd) < 0)
+    return;
   Process::list();
 }
 
@@ -297,6 +308,7 @@ void Client::login(char *server_ip, char *server_port){
     exit(-1);
   }
 
+  printf("%d", server_socket);
   // now we can use server_socket to send and receive data
 
   // on login the server should send the client the list of currently connected clients
@@ -309,7 +321,8 @@ void Client::login(char *server_ip, char *server_port){
 
 void Client::logout(){
   char *cmd = (char *)"LOGOUT";
-  require_login(cmd);
+  if (require_login(cmd) < 0)
+    return;
 
   close(server_socket);
 
@@ -324,7 +337,8 @@ void Client::logout(){
 /* Retrieve an updated list of loggin in clients from the server and use it to update connected_clients */
 void Client::refresh(){
   char *cmd = (char *)"REFRESH";
-  require_login(cmd);
+  if (require_login(cmd) < 0)
+    return;
   shell_success(cmd);
   shell_end(cmd);
 }
@@ -338,17 +352,19 @@ void Client::send_msg(char *client_ip, char *msg){
  * of the list of logged-in clients (This list may be outdated. Do not update
  * it as a result of this check). */
   char *cmd = (char *)"SEND";
-  require_login(cmd);
+  if (require_login(cmd) < 0)
+    return;
   shell_success(cmd);
   shell_end(cmd);
 }
 
 void Client::broadcast(char *msg){
   char *cmd = (char *)"BROADCAST";
-  require_login(cmd);
+  if (require_login(cmd) < 0)
+    return;
+
   shell_success(cmd);
   shell_end(cmd);
-
 }
 
 void Client::block(char *client_ip){
@@ -363,7 +379,8 @@ void Client::block(char *client_ip){
  * Client with IP address: <client-ip> is already blocked.   */
 
   char *cmd = (char *)"BLOCK";
-  require_login(cmd);
+  if (require_login(cmd) < 0)
+    return;
 
   /* */
   if (isBlocked(client_ip)){
@@ -389,7 +406,8 @@ void Client::unblock(char *client_ip){
  * Client with IP address: <client-ip> is not blocked.   */
 
   char *cmd = (char *)"UNBLOCK";
-  require_login(cmd);
+  if (require_login(cmd) < 0)
+    return;
 
   /* TO DO: NOTIFY SERVER */
 
@@ -408,7 +426,7 @@ void Client::exit_server(){
 
 // msgReceived will handle incoming messages and print/log them
 void Client::msg_received(char *client_ip, char *msg){
- char *format = (char *)"msg from:%s\n[msg]:%s\n";
+  char *format = (char *)"msg from:%s\n[msg]:%s\n";
   char *cmd = (char *)"RECEIVED";
 
   shell_success(cmd);

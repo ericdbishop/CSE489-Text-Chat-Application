@@ -13,6 +13,15 @@
 
 #include "../include/server.h"
 
+Server::Server(char *port){
+	//memset(&self, 0, sizeof(client));
+	strcpy(self.listening_port, port);
+
+	/* Fill in the details for the self Client object */
+	makeClient(&self);
+
+}
+
 /* read_inputs() is responsible for calling all other functions and will run so
  * long as the program is running. Much of this is taken from/based off of the bgnet guide */
 int Server::read_inputs(){
@@ -27,6 +36,12 @@ int Server::read_inputs(){
 	FD_ZERO(&master);
 
 	FD_SET(STDIN, &master); // add stdin to the file descriptor set
+	
+	/* Define listening socket value */
+  create_listener(&self);
+
+	listening_socket = self.listening_socket;
+	FD_SET(listening_socket, &master); // add stdin to the file descriptor set
 
 	while (true)
 	{
@@ -63,20 +78,10 @@ int Server::read_inputs(){
 					if (fdaccept > fdmax)
 						fdmax = fdaccept;
 
+          printf("client added\n");
 					// We should receive the clients information,
 					// put that information into a client structure, then add the structure to the
 					// connected clients list
-
-					// 1. receive client information in a buffer - might need to wait a second im not sure
-          printf("receiving new connection\n");
-					char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
-					recv(fdaccept, buffer, BUFFER_SIZE, 0);
-					// 2. process the information using receive_connected_client
-					// Make sure client is accounted for in logged_clients.
-					client_login(buffer);
-					// newClient should be updated by receive_connected_client to contain the new client information.
-					// 4. send the complete list of connected clients to the client
-					send_connected_clients(fdaccept);
 				}
 				else
 				{
@@ -111,8 +116,20 @@ int Server::read_inputs(){
             // Determine message type.
             /* Message types: client, message, refresh, block, unblock, exit?, logout? */ 
             char *msg = determine_msg_type(buffer);
+            printf("Received message: %s \n", buffer);
 
-            if (strcmp(msg, "message") == 0) {
+            if (strcmp(msg, "client") == 0) {
+					    // 1. receive client information in a buffer - might need to wait a second im not sure
+              printf("receiving login\n");
+					    char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+					    recv(fdaccept, buffer, BUFFER_SIZE, 0);
+					    // 2. process the information using receive_connected_client
+					    // Make sure client is accounted for in logged_clients.
+					    client_login(buffer);
+					    // newClient should be updated by receive_connected_client to contain the new client information.
+					    // 4. send the complete list of connected clients to the client
+					    send_connected_clients(i);
+            } else if (strcmp(msg, "message") == 0) {
               event(buffer);
             } else if (strcmp(msg, "refresh") == 0) {
 

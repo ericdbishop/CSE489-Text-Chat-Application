@@ -20,20 +20,6 @@ using namespace std;
  * We should actively maintain the correct order of clients so it goes from
  * smallest to largest port number */
 
-Process::Process(char *port)
-{
-	//memset(&self, 0, sizeof(client));
-	strcpy(self.listening_port, port);
-
-	/* Fill in the details for the self Client object */
-	makeClient(&self);
-
-	/* Define listening socket value */
-	listening_socket = self.listening_socket;
-}
-
-
-
 // receive connected client as string and process it to be stored in the list of client objects
 // "msg_type|listening_port|listening_socket|ip|hostname"
 void Process::receive_connected_client(char *buffer, client *newClient) {
@@ -402,7 +388,6 @@ int makeClient(client *newClient)
 	std::strncpy(newClient->hostname, host->h_name, sizeof(newClient->hostname) - 1);
 
 	// create the listening socket for the specified port
-	create_listener(newClient);
 	return 1;
 };
 

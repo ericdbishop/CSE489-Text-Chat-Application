@@ -30,7 +30,7 @@ using namespace std;
 
 struct client
 {
-	char listening_port[5];
+	char listening_port[6];
 	int listening_socket;
 	char ip[INET_ADDRSTRLEN];
 	char hostname[128];
@@ -58,7 +58,6 @@ class Process{
 	int listening_socket;
 	std::list<client> connected_clients;
 
-	Process(char *port);
 	char *handle_shell();
 	int call_command(char *command);
 	bool is_valid_ip(char *client_ip);

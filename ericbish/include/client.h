@@ -6,7 +6,7 @@ class Client : public Process
 {
 public:
     char server_ip[INET_ADDRSTRLEN];
-    char server_port[5];
+    char server_port[6];
     int server_socket;
     int port_listen;
     bool logged_in;
@@ -25,7 +25,7 @@ public:
     void logout();
     void exit_server();
     void msg_received(char *client_ip, char *msg);
-    void require_login(char *cmd);
+    int require_login(char *cmd);
 
     void list();
     int call_command(char *command);
