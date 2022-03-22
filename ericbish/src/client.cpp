@@ -38,6 +38,8 @@ int Client::read_inputs(){
 
 	listening_socket = self.listening_socket;
 	FD_SET(listening_socket, &master); // add stdin to the file descriptor set
+  if (listening_socket > fdmax)
+		fdmax = listening_socket;
 
 	while (true)
 	{

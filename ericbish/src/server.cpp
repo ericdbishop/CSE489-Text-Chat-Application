@@ -42,6 +42,9 @@ int Server::read_inputs(){
 
 	listening_socket = self.listening_socket;
 	FD_SET(listening_socket, &master); // add stdin to the file descriptor set
+  // We have to keep track of the biggest file descriptor
+	if (listening_socket > fdmax)
+		fdmax = listening_socket;
 
 	while (true)
 	{
