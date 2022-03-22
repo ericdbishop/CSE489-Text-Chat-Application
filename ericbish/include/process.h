@@ -34,7 +34,7 @@ struct client
 	int listening_socket;
 	char ip[INET_ADDRSTRLEN];
 	char hostname[128];
-	/* compareClient provides a sorting function for the connected_clients linked list */
+	/* operator() provides a sorting function for the connected_clients linked list */
 	bool operator()(const client one, const client two)
 	{
 		if (atoi(one.listening_port) > atoi(two.listening_port))

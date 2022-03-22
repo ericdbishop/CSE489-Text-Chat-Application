@@ -20,6 +20,13 @@ struct logged_client:client {
     strcpy(ip, to_log.ip);
     strcpy(hostname, to_log.hostname);
   }
+	bool operator()(const logged_client one, const logged_client two)
+	{
+		if (atoi(one.listening_port) > atoi(two.listening_port))
+			return false;
+		else
+			return true;
+	}
 };
 
 /* each blocked_by structure contains the information of a client and a list of
@@ -27,6 +34,14 @@ struct logged_client:client {
  * blocked clients using the compareClient() comparison. */
 struct blocked_by:client {
   std::list<client> blocked;
+
+	bool operator()(const blocked_by one, const blocked_by two)
+	{
+		if (atoi(one.listening_port) > atoi(two.listening_port))
+			return false;
+		else
+			return true;
+	}
 };
 
 class Server: public Process 

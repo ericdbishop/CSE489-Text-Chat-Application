@@ -216,7 +216,6 @@ void Server::client_login(char *buffer){
 	client *newClient = (client *)malloc(sizeof(client));
 
 	receive_connected_client(buffer, newClient);
-  connected_clients.sort(client::operator());
 
   // If the client is not already in the list of logged_clients, add it.
   //if (find(logged_clients.begin(), logged_clients.end(), newClient)
@@ -230,6 +229,7 @@ void Server::client_login(char *buffer){
   } else {
     // Client is logging in for first time
     logged_clients.insert(logged_clients.end(), to_find);
+    logged_clients.sort(logged_client::operator());
   }
 
 }

@@ -60,6 +60,7 @@ void Process::receive_connected_client(char *buffer, client *newClient) {
     }
   }
     connected_clients.insert(connected_clients.end(), (*newClient));
+	connected_clients.sort(client::operator());
 }
 
 
@@ -263,7 +264,6 @@ void Process::list()
 	char *cmd = (char *)"LIST";
 	shell_success(cmd);
 
-  	connected_clients.sort(client::operator());
 	int acc = 1;
     std::list<client>::iterator i;
 	for (i = connected_clients.begin(); i != connected_clients.end(); ++i)
