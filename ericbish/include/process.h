@@ -56,6 +56,8 @@ class Process{
 	struct client self;
 	// listening_socket is the socket fd.
 	int listening_socket;
+	fd_set readfds, master;
+	int fdaccept, fdmax;
 	std::list<client> connected_clients;
 
 	char *handle_shell();

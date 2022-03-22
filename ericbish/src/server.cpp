@@ -27,9 +27,8 @@ Server::Server(char *port){
 int Server::read_inputs(){
 
 	struct sockaddr_in client_addr;
-	fd_set readfds, master;
 	socklen_t caddr_len;
-	int fdaccept, fdmax = 0;
+  fdmax = 0;
 
 	// clear the file descriptor sets
 	FD_ZERO(&readfds);
@@ -81,7 +80,6 @@ int Server::read_inputs(){
 					if (fdaccept > fdmax)
 						fdmax = fdaccept;
 
-          printf("client added\n");
 					// We should receive the clients information,
 					// put that information into a client structure, then add the structure to the
 					// connected clients list
@@ -108,6 +106,8 @@ int Server::read_inputs(){
 						/* Remove from watched list */
 						FD_CLR(i, &master);
 
+            //decrement fdmax???
+
 						// remove from connected clients list TODO
             client_logout(i);
 
@@ -121,11 +121,9 @@ int Server::read_inputs(){
             char *msg = determine_msg_type(buffer);
             printf("Received message: %s \n", buffer);
 
-            if (strcmp(msg, "client") == 0) {
+            if (strncmp(msg, "client", 6) == 0) {
 					    // 1. receive client information in a buffer - might need to wait a second im not sure
               printf("receiving login\n");
-					    char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
-					    recv(fdaccept, buffer, BUFFER_SIZE, 0);
 					    // 2. process the information using receive_connected_client
 					    // Make sure client is accounted for in logged_clients.
 					    client_login(buffer);

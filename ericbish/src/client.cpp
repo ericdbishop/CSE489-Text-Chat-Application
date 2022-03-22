@@ -22,9 +22,8 @@ Client::Client (char *port){
 int Client::read_inputs(){
 
 	struct sockaddr_in server_addr;
-	fd_set readfds, master;
 	socklen_t caddr_len;
-	int fdaccept, fdmax = 0;
+  fdmax = 0;
 
 	// clear the file descriptor sets
 	FD_ZERO(&readfds);
@@ -37,7 +36,7 @@ int Client::read_inputs(){
   create_listener(&self);
 
 	listening_socket = self.listening_socket;
-	FD_SET(listening_socket, &master); // add stdin to the file descriptor set
+	FD_SET(listening_socket, &master); // add the client's listening socket to the file descriptor set
   if (listening_socket > fdmax)
 		fdmax = listening_socket;
 
@@ -310,7 +309,10 @@ void Client::login(char *server_ip, char *server_port){
     exit(-1);
   }
 
-  printf("%d", server_socket);
+	FD_SET(server_socket, &master); // add server socket to fd set
+  if (server_socket > fdmax)
+		fdmax = server_socket;
+  //printf("%d", server_socket);
   // now we can use server_socket to send and receive data
 
   // on login the server should send the client the list of currently connected clients

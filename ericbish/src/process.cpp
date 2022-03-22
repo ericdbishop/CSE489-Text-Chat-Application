@@ -149,9 +149,12 @@ char *Process::package(std::list<char *> segments){
  * won't guarantee that the message type is not malformed/doesn't exist. */
 char *Process::determine_msg_type(char *buffer){
   char delimiter[2];
+  char buffer_copy[BUFFER_SIZE];
+  memcpy(buffer_copy, buffer, strlen(buffer));
   strcpy(delimiter, "|");
-  char *msg_type;
-  msg_type = strtok(buffer, delimiter);
+  char *msg_type = (char *)malloc(10);
+  memset(msg_type, '\0', 10);
+  msg_type = strtok(buffer_copy, delimiter);
 
   if (msg_type == NULL) {
     printf("determine_msg_type: strok returned NULL");
