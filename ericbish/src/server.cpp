@@ -118,10 +118,13 @@ int Server::read_inputs(){
 
             // Determine message type.
             /* Message types: client, message, refresh, block, unblock, exit?, logout? */ 
-            char *msg = determine_msg_type(buffer);
+            char *msg = (char *)malloc(10);
+            strcpy(msg, determine_msg_type(buffer));
             printf("Received message: %s \n", buffer);
+            printf("msg type: %s \n", msg);
 
-            if (strncmp(msg, "client", 6) == 0) {
+            // client structure: msg_type|listening_port|listening_socket|ip|hostname|
+            if (strcmp(msg, "client") == 0) {
 					    // 1. receive client information in a buffer - might need to wait a second im not sure
               printf("receiving login\n");
 					    // 2. process the information using receive_connected_client
@@ -130,10 +133,16 @@ int Server::read_inputs(){
 					    // newClient should be updated by receive_connected_client to contain the new client information.
 					    // 4. send the complete list of connected clients to the client
 					    send_connected_clients(i);
+
+            // message structure: msg_type|msg|from_ip|to_ip|
             } else if (strcmp(msg, "message") == 0) {
               event(buffer);
-            } else if (strcmp(msg, "refresh") == 0) {
 
+            // refresh structure: msg_type|
+            } else if (strcmp(msg, "refresh") == 0) {
+					    send_connected_clients(i);
+
+            // refresh structure: msg_type|ip|
             } else if (strcmp(msg, "block") == 0) {
 
             } else if (strcmp(msg, "unblock") == 0) {
@@ -143,7 +152,7 @@ int Server::read_inputs(){
             }
 
             // we got some data from a client
-            /*
+            
             //BROADCAST:
             for(int j = 0; j <= fdmax; j++) {
               // send to everyone!
@@ -156,7 +165,7 @@ int Server::read_inputs(){
                 }
               }
             }
-          */
+          
 
 						// printf("\nClient sent me: %s\n", buffer);
 						// printf("ECHOing it back to the remote host ... ");
@@ -188,13 +197,15 @@ void Server::send_connected_clients(int client_socket)
 		client currentClient = (*it);
     	buffer = package_client(currentClient); 
 
-		len = strlen(buffer);
-		send(client_socket, buffer, len, 0);
+    printf("buffer to send to client: %s", buffer);
+
+		send(client_socket, buffer, strlen(buffer), 0);
 	}
-	buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
-  strcat(buffer, "DONE\0");
-  len = strlen(buffer);
-  send(client_socket, buffer, len, 0);
+  // As far as I can tell there is not a reason to tell the client we are done sending.
+	//buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+  //strcat(buffer, "DONE\0");
+  //len = strlen(buffer);
+  //send(client_socket, buffer, len, 0);
 }
 
 /* The main purpose of client_login is so that when the server receives a login

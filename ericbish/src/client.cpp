@@ -99,23 +99,24 @@ int Client::read_inputs(){
 					}
 					else
 					{
-						// Process incoming data from existing clients here ...
+						// Process incoming data from server here ...
+            char *msg = (char *)malloc(10);
+            strcpy(msg, determine_msg_type(buffer));
 
 						// the flag should be set when the client logs in or refreshes
 						if (requires_update) {
 							// clear connected client list
 							connected_clients.resize(0);
+              requires_update = false;
+            }
 							
-							// do this next part in a loop - we need a flag in the above if statement to
-							// signal we are done receiving (or else we will just reset our list)
-							// and receive a client continuosly
-							while (strcmp(buffer, "DONE") != 0) {
-								client *newClient = (client *)malloc(sizeof(client));
-								receive_connected_client(buffer, newClient);
-							}
-							// TODO set flag to signal done receiving
-						}
-						// printf("\nClient sent me: %s\n", buffer);
+            /* If we are receiving a "client" message, it can be assumed that we
+             * are getting a refresh or have just logged in. */
+						if (strcmp(msg, "client") == 0) {
+							client *newClient = (client *)malloc(sizeof(client));
+							receive_connected_client(buffer, newClient);
+						}						
+              // printf("\nClient sent me: %s\n", buffer);
 						// printf("ECHOing it back to the remote host ... ");
 						// // I'm pretty sure we don't want to use fdaccept when sending information to the clients
 						// if (send(fdaccept, buffer, strlen(buffer), 0) == strlen(buffer))
@@ -140,13 +141,14 @@ int Client::call_command(char *command){
 
   if (strcmp(command, "REFRESH") == 0)
     refresh();
+
   else if (strcmp(command, "LOGOUT") == 0)
     logout();
+
   else if (strcmp(command, "EXIT") == 0)
     exit_server();
-  
 
-  if (cmd_and_arguments.find("SEND") != std::string::npos) {
+  else if (cmd_and_arguments.find("SEND") != std::string::npos) {
     cmd = cmd_and_arguments.substr(0,4);
     // Arguments here will be both arguments separated by a space.
     string arguments = cmd_and_arguments.substr(5);
@@ -308,6 +310,7 @@ void Client::login(char *server_ip, char *server_port){
     output_error(cmd);
     exit(-1);
   }
+  requires_update = true;
 
 	FD_SET(server_socket, &master); // add server socket to fd set
   if (server_socket > fdmax)
@@ -336,6 +339,7 @@ void Client::logout(){
   logged_in = false;
   shell_success(cmd);
   shell_end(cmd);
+  requires_update = false;
 }
 
 /* Retrieve an updated list of loggin in clients from the server and use it to update connected_clients */
@@ -343,6 +347,18 @@ void Client::refresh(){
   char *cmd = (char *)"REFRESH";
   if (require_login(cmd) < 0)
     return;
+
+  char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+
+  // buffer structure: msg_type|listening_port|listening_socket|ip|hostname
+  std::list<char *> segments;
+  segments.insert(segments.end(), (char *)"refresh");
+
+  strcpy(buffer, package(segments));
+
+  send(server_socket, buffer, strlen(buffer), 0);
+
+  requires_update = true;
   shell_success(cmd);
   shell_end(cmd);
 }

@@ -31,10 +31,11 @@ void Process::receive_connected_client(char *buffer, client *newClient) {
   for (int i = 0; i < 5; i++) {
     // error handling - check if there's less than 4 elements
     if (it == segments.end()) {
-      printf("Client::receive_connected_clients error: didn't receive all 5 elements");
+      perror("Client::receive_connected_clients error: didn't receive all 5 elements");
+	  break;
     }
 
-	element_str = (*it);
+	element_str = (*it++);
     // process the elements and add them to a temporary client
     switch (i)
     {
@@ -114,8 +115,6 @@ char *Process::package_client(client client_to_package){
   char *sock = (char *)malloc(sizeof(char) * 6);// 6 because the max port number would be "65535\n"
   sprintf(sock, "%d", client_to_package.listening_socket);
 
-  //char *msg_type = (char *)"client";
-  //strcpy(msg_type, "client");
   // buffer structure: msg_type|listening_port|listening_socket|ip|hostname
   std::list<char *> segments;
   segments.insert(segments.end(), (char *)"client");
