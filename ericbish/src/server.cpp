@@ -191,6 +191,7 @@ void Server::send_connected_clients(int client_socket)
   char *buffer;
   int len;
   client currentClient;
+
   std::list<client>::iterator it;
 	for (it=connected_clients.begin(); it != connected_clients.end(); ++it) {
 		buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
@@ -215,6 +216,7 @@ void Server::client_login(char *buffer){
 	client *newClient = (client *)malloc(sizeof(client));
 
 	receive_connected_client(buffer, newClient);
+  connected_clients.sort(client::operator());
 
   // If the client is not already in the list of logged_clients, add it.
   //if (find(logged_clients.begin(), logged_clients.end(), newClient)

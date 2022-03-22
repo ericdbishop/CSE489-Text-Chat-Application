@@ -262,6 +262,8 @@ void Process::list()
 
 	char *cmd = (char *)"LIST";
 	shell_success(cmd);
+
+  	connected_clients.sort(client::operator());
 	int acc = 1;
     std::list<client>::iterator i;
 	for (i = connected_clients.begin(); i != connected_clients.end(); ++i)

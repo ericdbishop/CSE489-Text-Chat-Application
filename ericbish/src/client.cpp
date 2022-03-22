@@ -115,6 +115,7 @@ int Client::read_inputs(){
 						if (strcmp(msg, "client") == 0) {
 							client *newClient = (client *)malloc(sizeof(client));
 							receive_connected_client(buffer, newClient);
+              connected_clients.sort(client::operator());
 						}						
               // printf("\nClient sent me: %s\n", buffer);
 						// printf("ECHOing it back to the remote host ... ");
