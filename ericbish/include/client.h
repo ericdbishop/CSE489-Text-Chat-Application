@@ -11,7 +11,7 @@ public:
     int port_listen;
     bool logged_in;
     bool requires_update;
-    std::list<client> blocked_clients;
+    std::list<char *> blocked_clients;
 
     Client(char *port);
 	int read_inputs();
@@ -24,7 +24,7 @@ public:
     void unblock(char *client_ip);
     void logout();
     void exit_server();
-    void msg_received(char *client_ip, char *msg);
+    void msg_received(char *buffer);
     int require_login(char *cmd);
 
     void list();

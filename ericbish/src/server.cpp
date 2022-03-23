@@ -142,11 +142,13 @@ int Server::read_inputs(){
             } else if (strcmp(msg, "refresh") == 0) {
 					    send_connected_clients(i);
 
-            // refresh structure: msg_type|ip|
+            // block structure: msg_type|from_ip|block_ip|
             } else if (strcmp(msg, "block") == 0) {
 
+            // unblock structure: msg_type|from_ip|unblock_ip|
             } else if (strcmp(msg, "unblock") == 0) {
 
+            // exit structure:: msg_type|sender_ip|
             } else if (strcmp(msg, "exit") == 0) {
 
             }
@@ -268,11 +270,7 @@ int Server::call_command(char *command){
 
       arguments.copy(client_ip, arguments.length() + 1);
       client_ip[arguments.length()] = '\0';
-      //Check if the IP is valid
-      if (!is_valid_ip(client_ip)) {
-        // error
-        perror("Invalid IP");
-      }
+
       blocked(client_ip);
   }
  else return -1;
@@ -333,6 +331,12 @@ void Server::blocked(char *client_ip) {
   char *cmd = (char *)"BLOCKED";
   int list_id, port_listen;
   char *hname, *ip_addr;
+
+  if (!is_valid_ip(client_ip)){
+    printf("invalid ip %s", client_ip);
+    output_error(cmd);
+    return;
+  }
 
   /* Iterate over clients in the block_lists until we find the one with the
    * right ip. */

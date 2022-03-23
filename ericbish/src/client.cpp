@@ -103,7 +103,7 @@ int Client::read_inputs(){
             char *msg = (char *)malloc(10);
             strcpy(msg, determine_msg_type(buffer));
 
-						// the flag should be set when the client logs in or refreshes
+						// requires_update should be set true when the client logs in or refreshes
 						if (requires_update) {
 							// clear connected client list
 							connected_clients.resize(0);
@@ -116,11 +116,12 @@ int Client::read_inputs(){
 							client *newClient = (client *)malloc(sizeof(client));
 							receive_connected_client(buffer, newClient);
 						}						
-              // printf("\nClient sent me: %s\n", buffer);
-						// printf("ECHOing it back to the remote host ... ");
-						// // I'm pretty sure we don't want to use fdaccept when sending information to the clients
-						// if (send(fdaccept, buffer, strlen(buffer), 0) == strlen(buffer))
-						// 	printf("Done!\n");
+            
+            else if (strcmp(msg, "message") == 0) {
+              msg_received(buffer);
+
+            }
+
 						fflush(stdout);
 					}
 
@@ -164,12 +165,7 @@ int Client::call_command(char *command){
     message.copy(msg, message.length() + 1);
     msg[message.length()] = '\0';
 
-    //Check if the IP is valid
-    if (!is_valid_ip(client_ip)) {
-      // error
-      perror("Invalid IP");
-    }
-
+    printf(msg);
     send_msg(client_ip, msg);
   }
   else if (cmd_and_arguments.find("LOGIN") != std::string::npos) {
@@ -202,12 +198,6 @@ int Client::call_command(char *command){
     arguments.copy(client_ip, arguments.length() + 1);
     client_ip[arguments.length()] = '\0';
 
-    //Check if the IP is valid
-    if (!is_valid_ip(client_ip)) {
-      // error
-      perror("Invalid IP");
-    }
-
     block(client_ip);
   }
   else if (cmd_and_arguments.find("UNBLOCK") != std::string::npos) {
@@ -217,12 +207,6 @@ int Client::call_command(char *command){
 
     arguments.copy(client_ip, arguments.length() + 1);
     client_ip[arguments.length()] = '\0';
-
-    //Check if the IP is valid
-    if (!is_valid_ip(client_ip)) {
-      // error
-      perror("Invalid IP");
-    }
 
     unblock(client_ip);
   }
@@ -278,17 +262,6 @@ int Client::connect_to_host(char *server_ip, char* server_port)
 	return fdsocket;
 }
 
-//void Client::send_to_server(char *buffer){
-//
-//}
-
-int Client::require_login(char *cmd){
-  if (!logged_in){
-    shell_error(cmd);
-    return -1;
-  }
-  return 0;
-}
   
 /* A client should not accept any other command, except LOGIN, EXIT, IP, PORT,
  * and AUTHOR, or receive packets, unless it is successfully logged in to the
@@ -298,8 +271,10 @@ int Client::require_login(char *cmd){
  * call parent function. */
 void Client::list() {
   char *cmd = (char *)"LIST";
-  if (require_login(cmd) < 0)
+  if (require_login(cmd) < 0) {
+    output_error(cmd);
     return;
+  }
   Process::list();
 }
 
@@ -326,15 +301,17 @@ void Client::login(char *server_ip, char *server_port){
   shell_end(cmd);
 }
 
+// NEEDS TESTING
 void Client::logout(){
   char *cmd = (char *)"LOGOUT";
-  if (require_login(cmd) < 0)
+  if (require_login(cmd) < 0) {
+    output_error(cmd);
     return;
+  }
 
   close(server_socket);
 
   // They should not be able to view connected clients and logged_in should be changed to false
-  // connected_clients.remove(self);
   connected_clients.resize(0);
   logged_in = false;
   shell_success(cmd);
@@ -345,12 +322,14 @@ void Client::logout(){
 /* Retrieve an updated list of loggin in clients from the server and use it to update connected_clients */
 void Client::refresh(){
   char *cmd = (char *)"REFRESH";
-  if (require_login(cmd) < 0)
+  if (require_login(cmd) < 0) {
+    output_error(cmd);
     return;
+  }
 
   char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
 
-  // buffer structure: msg_type|listening_port|listening_socket|ip|hostname
+  // buffer structure: "refresh"|
   std::list<char *> segments;
   segments.insert(segments.end(), (char *)"refresh");
 
@@ -363,30 +342,78 @@ void Client::refresh(){
   shell_end(cmd);
 }
 
+// NEEDS TESTING
 void Client::send_msg(char *client_ip, char *msg){
 /* Exceptions:
 
  * Invalid IP address. 
-
  * Valid IP address which does not exist in the local copy
  * of the list of logged-in clients (This list may be outdated. Do not update
  * it as a result of this check). */
+
   char *cmd = (char *)"SEND";
-  if (require_login(cmd) < 0)
+  if (require_login(cmd) < 0) {
+    printf("not logged in");
+    output_error(cmd);
     return;
+  }
+
+  if (!is_valid_ip(client_ip)){
+    printf("invalid ip %s", client_ip);
+    output_error(cmd);
+    return;
+  }
+
+  if (strlen(msg) > 256) {
+    printf("length error");
+    output_error(cmd);
+    return;
+  }
+
+  char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+
+  // message structure: "message"|msg|from_ip|to_ip|
+  std::list<char *> segments;
+  segments.insert(segments.end(), (char *)"message");
+  segments.insert(segments.end(), msg);
+  segments.insert(segments.end(), self.ip);
+  segments.insert(segments.end(), client_ip);
+
+  strcpy(buffer, package(segments));
+
+  send(server_socket, buffer, strlen(buffer), 0);
+
   shell_success(cmd);
   shell_end(cmd);
 }
 
+// NEEDS TESTING
 void Client::broadcast(char *msg){
   char *cmd = (char *)"BROADCAST";
-  if (require_login(cmd) < 0)
+  if (require_login(cmd) < 0) {
+    output_error(cmd);
     return;
+  }
+
+  char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+
+  char *broadcast_ip = (char *)"255.255.255.255";
+  // message structure: "message"|msg|from_ip|to_ip|
+  std::list<char *> segments;
+  segments.insert(segments.end(), (char *)"message");
+  segments.insert(segments.end(), msg);
+  segments.insert(segments.end(), self.ip);
+  segments.insert(segments.end(), broadcast_ip);
+
+  strcpy(buffer, package(segments));
+
+  send(server_socket, buffer, strlen(buffer), 0);
 
   shell_success(cmd);
   shell_end(cmd);
 }
 
+// NEEDS TESTING
 void Client::block(char *client_ip){
 /* Exceptions:
  * 
@@ -399,53 +426,116 @@ void Client::block(char *client_ip){
  * Client with IP address: <client-ip> is already blocked.   */
 
   char *cmd = (char *)"BLOCK";
-  if (require_login(cmd) < 0)
+  if (require_login(cmd) < 0) {
+    output_error(cmd);
     return;
-
-  /* */
-  if (isBlocked(client_ip)){
-    shell_error(cmd);
   }
 
-  /* TO DO: NOTIFY SERVER */
+  /* Error if the given IP is already blocked */
+  if (isBlocked(client_ip)){
+    output_error(cmd);
+    return;
+  }
 
+  if (!is_valid_ip(client_ip)){
+    printf("invalid ip %s", client_ip);
+    output_error(cmd);
+    return;
+  }
 
+  char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+
+  // block structure: msg_type|from_ip|block_ip|
+  std::list<char *> segments;
+  segments.insert(segments.end(), (char *)"block");
+  segments.insert(segments.end(), self.ip);
+  segments.insert(segments.end(), client_ip);
+
+  strcpy(buffer, package(segments));
+
+  send(server_socket, buffer, strlen(buffer), 0);
+
+  blocked_clients.insert(blocked_clients.end(), client_ip);
   shell_success(cmd);
   shell_end(cmd);
 }
 
+// NEEDS TESTING
+// unblock structure: msg_type|from_ip|unblock_ip|
 void Client::unblock(char *client_ip){
-/* Exceptions:
- * 
- * Invalid IP address. 
- * 
- * Valid IP address which does not exist in the local copy
- * of the list of logged-in clients (This list may be outdated. Do not update
- * it as a result of this check). 
- * 
- * Client with IP address: <client-ip> is not blocked.   */
+/* Exceptions: */
 
   char *cmd = (char *)"UNBLOCK";
-  if (require_login(cmd) < 0)
+  if (require_login(cmd) < 0) {
+    output_error(cmd);
     return;
+  }
 
-  /* TO DO: NOTIFY SERVER */
+ /* Client with IP address: <client-ip> is not blocked.   */
+  if (!isBlocked(client_ip)){
+    output_error(cmd);
+    return;
+  }
 
+ /* Invalid IP address. */
+  if (!is_valid_ip(client_ip)){
+    printf("invalid ip %s", client_ip);
+    output_error(cmd);
+    return;
+  }
 
+  char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+
+  // unblock structure: msg_type|from_ip|unblock_ip|
+  std::list<char *> segments;
+  segments.insert(segments.end(), (char *)"unblock");
+  segments.insert(segments.end(), self.ip);
+  segments.insert(segments.end(), client_ip);
+
+  strcpy(buffer, package(segments));
+
+  send(server_socket, buffer, strlen(buffer), 0);
+
+  blocked_clients.remove(client_ip);
   shell_success(cmd);
   shell_end(cmd);
 }
 
-
+// NEEDS TESTING
 void Client::exit_server(){
   char *cmd = (char *)"EXIT";
 
+  char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+  strcpy(buffer, "exit|");
+  send(server_socket, buffer, strlen(buffer), 0);
+  
   shell_success(cmd);
   shell_end(cmd);
+
+  exit(0);
 }
 
-// msgReceived will handle incoming messages and print/log them
-void Client::msg_received(char *client_ip, char *msg){
+// FINISHED BUT UNTESTED
+/* msgReceived will handle incoming messages that are still in the received
+ * message buffer and print/log them */
+void Client::msg_received(char *buffer){
+  char client_ip[INET_ADDRSTRLEN], *msg;
+  char *element_str; 
+  std::list <char *> segments = unpack(buffer);
+
+  // message structure: msg_type|msg|from_ip|to_ip|
+  std::list<char *>::iterator it;
+  it = segments.begin();
+  //msg_type
+  element_str = (*it++);
+  //msg
+  element_str = (*it++);
+  msg = (char *)malloc(strlen(element_str));
+  strcpy(msg, element_str);
+  // from_ip
+  element_str = (*it);
+  strcpy(client_ip, element_str);
+
   char *format = (char *)"msg from:%s\n[msg]:%s\n";
   char *cmd = (char *)"RECEIVED";
 
@@ -454,6 +544,7 @@ void Client::msg_received(char *client_ip, char *msg){
   shell_end(cmd);
 }
 
+
 /***************************
       HELPER FUNCTIONS
 ***************************/
@@ -461,11 +552,20 @@ void Client::msg_received(char *client_ip, char *msg){
 /* isBlocked returns true if a client with client_ip is blocked, and returns
  * false otherwise */
 bool Client::isBlocked(char *client_ip){
-  std::list<client>::iterator it;
+  std::list<char *>::iterator it;
   for (it = blocked_clients.begin(); it != blocked_clients.end(); ++it) {
-    client blocked_client = (*it);
+    char *blocked_client = (*it);
 
-  if (blocked_client.ip == client_ip) return true;
+    if (strcmp(blocked_client, client_ip) == 0) return true;
   }
   return false;
+}
+
+/* Return -1 if client is not logged in, 0 if they are. */
+int Client::require_login(char *cmd){
+  if (!logged_in){
+    shell_error(cmd);
+    return -1;
+  }
+  return 0;
 }
