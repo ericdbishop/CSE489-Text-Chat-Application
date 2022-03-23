@@ -56,7 +56,7 @@ public:
 	int read_inputs();
   void statistics();
   void blocked(char *client_ip);
-  void event(char *buffer);
+  void event(char *buffer, int sender);
   int call_command(char *command);
   bool is_valid_ip(char *client_ip);
   void send_to_server(char *buffer);

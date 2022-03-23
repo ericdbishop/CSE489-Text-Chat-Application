@@ -136,7 +136,7 @@ int Server::read_inputs(){
 
             // message structure: msg_type|msg|from_ip|to_ip|
             } else if (strcmp(msg, "message") == 0) {
-              event(buffer);
+              event(buffer, i);
 
             // refresh structure: msg_type|
             } else if (strcmp(msg, "refresh") == 0) {
@@ -153,20 +153,6 @@ int Server::read_inputs(){
 
             }
 
-            // we got some data from a client
-            
-            //BROADCAST:
-            for(int j = 0; j <= fdmax; j++) {
-              // send to everyone!
-              if (FD_ISSET(j, &master)) {
-                // except the listener and ourselves
-                if (j != listening_socket && j != i) {
-                  if (send(j, buffer, nbytes, 0) == -1) {
-                  perror("send");
-                  }
-                }
-              }
-            }
           
 
 						// printf("\nClient sent me: %s\n", buffer);
@@ -202,7 +188,9 @@ void Server::send_connected_clients(int client_socket)
 
     printf("buffer to send to client: %s", buffer);
 
-		send(client_socket, buffer, strlen(buffer), 0);
+		if(send(client_socket, buffer, strlen(buffer), 0) == -1){
+      perror("send");
+    }
 	}
   // As far as I can tell there is not a reason to tell the client we are done sending.
 	//buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
@@ -371,7 +359,7 @@ void Server::blocked(char *client_ip) {
 /* The event function will handle output when a client sends a message 
  * which is routed through the server. In the case of a broadcast message,
  * the to_client_ip should be 255.255.255.255 */
-void Server::event(char *buffer) {
+void Server::event(char *buffer, int sender) {
   char *from_client_ip, *to_client_ip, *msg;
   char *format = (char *)"%-5d%-35s%-8d%-8d%-8s\n";
   char *cmd = (char *)"RELAYED";
@@ -384,10 +372,22 @@ void Server::event(char *buffer) {
   // messages structure: "message"|src_ip|dest_ip|msg
   from_client_ip = (*(it++));
   to_client_ip = (*(it++));
+  msg = (char *)malloc(strlen());
   msg = (*it);
 
   if (strcmp(broadcast_ip, to_client_ip) == 0) { // BROADCAST
-
+    //BROADCAST from the bgnet guide:
+    for(int j = 0; j <= fdmax; j++) {
+      // send to everyone!
+      if (FD_ISSET(j, &master)) {
+        // except the listener and ourselves
+        if (j != listening_socket && j != sender && j != STDIN) {
+          if (send(j, buffer, nbytes, 0) == -1) {
+          perror("send");
+          }
+        }
+      }
+    }
   } else { // SEND
 
   }

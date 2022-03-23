@@ -1,5 +1,0 @@
-break main
-break ericbish_assignment1.cpp:82
-break process.cpp:222
-
-set exec-wrapper The wrapper for running programs is \

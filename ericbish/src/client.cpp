@@ -102,24 +102,21 @@ int Client::read_inputs(){
 						// Process incoming data from server here ...
             char *msg = (char *)malloc(10);
             strcpy(msg, determine_msg_type(buffer));
-
-						// requires_update should be set true when the client logs in or refreshes
-						if (requires_update) {
-							// clear connected client list
-							connected_clients.resize(0);
-              requires_update = false;
-            }
 							
             /* If we are receiving a "client" message, it can be assumed that we
              * are getting a refresh or have just logged in. */
 						if (strcmp(msg, "client") == 0) {
+						  // requires_update should be set true when the client logs in or refreshes
+						  if (requires_update) {
+						  	// clear connected client list
+						  	connected_clients.resize(0);
+                requires_update = false;
+              }
 							client *newClient = (client *)malloc(sizeof(client));
 							receive_connected_client(buffer, newClient);
 						}						
-            
             else if (strcmp(msg, "message") == 0) {
               msg_received(buffer);
-
             }
 
 						fflush(stdout);
@@ -255,7 +252,9 @@ int Client::connect_to_host(char *server_ip, char* server_port)
 
   usleep(100000);
 
-  send(fdsocket, buffer, strlen(buffer), 0);
+  if (send(fdsocket, buffer, strlen(buffer), 0) == -1) {
+    perror("send");
+  }
 
 	freeaddrinfo(res);
 
@@ -335,7 +334,9 @@ void Client::refresh(){
 
   strcpy(buffer, package(segments));
 
-  send(server_socket, buffer, strlen(buffer), 0);
+  if (send(server_socket, buffer, strlen(buffer), 0) == -1) {
+    perror("send");
+  }
 
   requires_update = true;
   shell_success(cmd);
@@ -381,7 +382,9 @@ void Client::send_msg(char *client_ip, char *msg){
 
   strcpy(buffer, package(segments));
 
-  send(server_socket, buffer, strlen(buffer), 0);
+  if (send(server_socket, buffer, strlen(buffer), 0) == -1) {
+    perror("send");
+  }
 
   shell_success(cmd);
   shell_end(cmd);
@@ -391,6 +394,12 @@ void Client::send_msg(char *client_ip, char *msg){
 void Client::broadcast(char *msg){
   char *cmd = (char *)"BROADCAST";
   if (require_login(cmd) < 0) {
+    output_error(cmd);
+    return;
+  }
+
+  if (strlen(msg) > 256) {
+    printf("length error");
     output_error(cmd);
     return;
   }
@@ -407,7 +416,9 @@ void Client::broadcast(char *msg){
 
   strcpy(buffer, package(segments));
 
-  send(server_socket, buffer, strlen(buffer), 0);
+  if (send(server_socket, buffer, strlen(buffer), 0) == -1) {
+    perror("send");
+  }
 
   shell_success(cmd);
   shell_end(cmd);
@@ -453,7 +464,9 @@ void Client::block(char *client_ip){
 
   strcpy(buffer, package(segments));
 
-  send(server_socket, buffer, strlen(buffer), 0);
+  if (send(server_socket, buffer, strlen(buffer), 0) == -1) {
+    perror("send");
+  }
 
   blocked_clients.insert(blocked_clients.end(), client_ip);
   shell_success(cmd);
@@ -494,7 +507,9 @@ void Client::unblock(char *client_ip){
 
   strcpy(buffer, package(segments));
 
-  send(server_socket, buffer, strlen(buffer), 0);
+  if (send(server_socket, buffer, strlen(buffer), 0) == -1) {
+    perror("send");
+  }
 
   blocked_clients.remove(client_ip);
   shell_success(cmd);
@@ -507,7 +522,9 @@ void Client::exit_server(){
 
   char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
   strcpy(buffer, "exit|");
-  send(server_socket, buffer, strlen(buffer), 0);
+  if (send(server_socket, buffer, strlen(buffer), 0) == -1) {
+    perror("send");
+  }
   
   shell_success(cmd);
   shell_end(cmd);
@@ -535,6 +552,9 @@ void Client::msg_received(char *buffer){
   // from_ip
   element_str = (*it);
   strcpy(client_ip, element_str);
+
+  //msg = (*(it++));
+  //from_ip = (*(it++));
 
   char *format = (char *)"msg from:%s\n[msg]:%s\n";
   char *cmd = (char *)"RECEIVED";

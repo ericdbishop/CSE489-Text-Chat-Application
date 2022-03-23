@@ -1,6 +1,0 @@
-break ericbish_assignment1.cpp:82
-disable $bpnum
-break process.cpp:222
-disable $bpnum
-
-set exec-wrapper The wrapper for running programs is \
