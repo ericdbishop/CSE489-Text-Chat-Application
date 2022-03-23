@@ -216,20 +216,20 @@ void Server::client_login(char *buffer, int socket_for_send){
 
 
   if (!logged_clients.empty()){
-	  logged_client find_result = (*find(newClient->ip));
+	  std::list<logged_client>::iterator find_result = find(newClient->ip);
 
     // Client is not logging in for the first time
-    if (strcmp(find_result.ip, newClient->ip) == 0){
-      strcpy(find_result.status, "logged-in"); 
+    if (strcmp(find_result->ip, newClient->ip) == 0){
+      strcpy(find_result->status, "logged-in"); 
 
 	    std::list<char *>::iterator it;
-      for (it=find_result.buffered_messages.begin(); it != find_result.buffered_messages.end(); ++it) {
+      for (it=find_result->buffered_messages.begin(); it != find_result->buffered_messages.end(); ++it) {
 	     char *current_buffer = (*it);
 
-        if (send(find_result.socket_for_send, current_buffer, strlen(current_buffer), 0) == -1) {
+        if (send(find_result->socket_for_send, current_buffer, strlen(current_buffer), 0) == -1) {
           perror("send");
         } else {
-          find_result.num_msg_rcv += 1; // Increment the number of messages received.
+          find_result->num_msg_rcv += 1; // Increment the number of messages received.
         }
 
       }
@@ -250,10 +250,10 @@ void Server::client_logout(int sock_fd){
 
    	if (currentClient.socket_for_send == sock_fd && !logged_clients.empty()){
    	  // client logging out
-	    logged_client find_result = (*find(currentClient.ip));
+	    std::list<logged_client>::iterator find_result = find(currentClient.ip);
 
-      if (strcmp(find_result.ip, currentClient.ip) == 0){
-        strcpy(find_result.status, "logged-out"); 
+      if (strcmp(find_result->ip, currentClient.ip) == 0){
+        strcpy(find_result->status, "logged-out"); 
       }
     }
   }
@@ -439,7 +439,7 @@ void Server::block_client(char *buffer){
     blocked_by current_client = (*i);
 
     if (strcmp(current_client.ip, from_client_ip) == 0) {
-      current_client.blocked.insert(current_client.blocked.end(), (*it));
+      i->blocked.insert(current_client.blocked.end(), (*it));
       break;
     }
   }
