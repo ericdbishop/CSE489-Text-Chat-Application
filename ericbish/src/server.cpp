@@ -129,7 +129,7 @@ int Server::read_inputs(){
               printf("receiving login\n");
 					    // 2. process the information using receive_connected_client
 					    // Make sure client is accounted for in logged_clients.
-					    client_login(buffer);
+					    client_login(buffer, i);
 					    // newClient should be updated by receive_connected_client to contain the new client information.
 					    // 4. send the complete list of connected clients to the client
 					    send_connected_clients(i);
@@ -202,10 +202,11 @@ void Server::send_connected_clients(int client_socket)
 /* The main purpose of client_login is so that when the server receives a login
  * they can decide if this client has already been previously logged into the
  * server */
-void Server::client_login(char *buffer){
+void Server::client_login(char *buffer, int socket_for_send){
 	client *newClient = (client *)malloc(sizeof(client));
 
 	receive_connected_client(buffer, newClient);
+  newClient->socket_for_send = socket_for_send;
 
   // If the client is not already in the list of logged_clients, add it.
   //if (find(logged_clients.begin(), logged_clients.end(), newClient)
@@ -375,22 +376,30 @@ void Server::event(char *buffer, int sender) {
   msg = (char *)malloc(strlen());
   msg = (*it);
 
-  if (strcmp(broadcast_ip, to_client_ip) == 0) { // BROADCAST
-    //BROADCAST from the bgnet guide:
-    for(int j = 0; j <= fdmax; j++) {
-      // send to everyone!
-      if (FD_ISSET(j, &master)) {
-        // except the listener and ourselves
-        if (j != listening_socket && j != sender && j != STDIN) {
-          if (send(j, buffer, nbytes, 0) == -1) {
-          perror("send");
-          }
-        }
-      }
-    }
-  } else { // SEND
+  int sock;
+  bool BROADCAST;
+  BROADCAST = strcmp(broadcast_ip, to_client_ip) == 0;
+	std::list<logged_client>::iterator it;
 
-  }
+  for (it=logged_clients.begin(); it != logged_clients.end(); ++it) {
+	  logged_client currentClient = (*it);
+    sock = currentClient.socket_for_send;
+
+	  if (sock != sender) {  // If client is not the sender
+      if (BROADCAST || strcmp(currentClient.ip, to_client_ip) == 0) { // BROADCAST or client is found in the list of logged clients
+        // && FD_ISSET(sock, &master)
+        if (strcmp(currentClient.status, "logged-in") == 0) { // If this client is logged-in, send the message.
+          if (send(sock, buffer, nbytes, 0) == -1) {
+            perror("send");
+          } else {
+            currentClient.num_msg_rcv += 1; // Increment the number of messagese received.
+          }
+        } else { // Client is logged out, so buffer the message for them
+          currentClient.buffered_messages.insert(currentClient.buffered_messages.end(), buffer);
+        }
+      } 
+	  } else currentClient.num_msg_sent += 1; // Increment sender's messages sent
+  } 
 
   shell_success(cmd);
   cse4589_print_and_log(format, from_client_ip, to_client_ip, msg);

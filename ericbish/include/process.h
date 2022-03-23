@@ -43,6 +43,8 @@ struct client
 			return true;
 	}
 
+	// This will be the socket returned by accept()
+	int socket_for_send;
 };
 
 void shell_success(char *command_str);

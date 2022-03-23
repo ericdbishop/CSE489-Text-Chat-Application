@@ -62,7 +62,7 @@ public:
   void send_to_server(char *buffer);
 	void send_connected_clients(int client_socket);
 
-  void client_login(char *buffer);
+  void client_login(char *buffer, int socket_for_send);
   void client_logout(int sock_fd);
 
   std::list<client>::iterator find(client *to_find);
