@@ -19,6 +19,7 @@ struct logged_client:client {
     listening_socket = to_log.listening_socket;
     strcpy(ip, to_log.ip);
     strcpy(hostname, to_log.hostname);
+    socket_for_send = to_log.socket_for_send;
   }
 	bool operator()(const logged_client one, const logged_client two)
 	{

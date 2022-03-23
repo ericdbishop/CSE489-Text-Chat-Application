@@ -212,11 +212,23 @@ void Server::client_login(char *buffer, int socket_for_send){
   //if (find(logged_clients.begin(), logged_clients.end(), newClient)
 
   logged_client to_find = logged_client(*newClient);
-	std::list<logged_client>::iterator find_result = find(&to_find);
+	logged_client find_result = (*find(&to_find));
 
   // Client is not logging in for the first time
-  if (strcmp((*find_result).ip, to_find.ip) == 0){
-    strcpy((*find_result).status, "logged-in"); 
+  if (strcmp(find_result.ip, to_find.ip) == 0){
+    strcpy(find_result.status, "logged-in"); 
+
+	  std::list<char *>::iterator it;
+    for (it=find_result.buffered_messages.begin(); it != find_result.buffered_messages.end(); ++it) {
+	    char *current_buffer = (*it);
+
+      if (send(find_result.socket_for_send, current_buffer, nbytes, 0) == -1) {
+        perror("send");
+      } else {
+        find_result.num_msg_rcv += 1; // Increment the number of messages received.
+      }
+
+    }
   } else {
     // Client is logging in for first time
     logged_clients.insert(logged_clients.end(), to_find);
@@ -229,12 +241,16 @@ void Server::client_logout(int sock_fd){
 	std::list<client>::iterator it;
   for (it=connected_clients.begin(); it != connected_clients.end(); ++it) {
 	  client currentClient = (*it);
-		char *client_sock = (char *)malloc(sizeof(char) * 6);// 6 because the max port number would be "65535\n"			sprintf(client_sock, "%d", currentClient.listening_socket);
-		char *sock = (char *)malloc(sizeof(char) * 6);// 6 because the max port number would be "65535\n"			sprintf(sock, "%d", i);
-    sprintf(sock, "%d", sock_fd);
 
-   	if (strcmp(client_sock, sock) == 0){
-   	  // client logging out						    	  ; 				}
+   	if (strcmp(currentClient.socket_for_send, sock_fd) == 0){
+   	  // client logging out
+      logged_client to_find = logged_client(currentClient);
+	    logged_client find_result = (*find(&to_find));
+
+      // Client is not logging in for the first time
+      if (strcmp(find_result.ip, to_find.ip) == 0){
+        strcpy(find_result.status, "logged-out"); 
+      }
     }
   }
 }
