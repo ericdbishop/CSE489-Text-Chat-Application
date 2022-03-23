@@ -309,6 +309,7 @@ void Client::logout(){
   }
 
   close(server_socket);
+	FD_CLR(server_socket, &master);
 
   // They should not be able to view connected clients and logged_in should be changed to false
   connected_clients.resize(0);
@@ -354,19 +355,19 @@ void Client::send_msg(char *client_ip, char *msg){
 
   char *cmd = (char *)"SEND";
   if (require_login(cmd) < 0) {
-    printf("not logged in");
+    printf("not logged in\n");
     output_error(cmd);
     return;
   }
 
   if (!is_valid_ip(client_ip)){
-    printf("invalid ip %s", client_ip);
+    printf("invalid ip %s\n", client_ip);
     output_error(cmd);
     return;
   }
 
   if (strlen(msg) > 256) {
-    printf("length error");
+    printf("length error\n");
     output_error(cmd);
     return;
   }

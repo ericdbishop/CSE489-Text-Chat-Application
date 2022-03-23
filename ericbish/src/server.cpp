@@ -186,9 +186,9 @@ void Server::send_connected_clients(int client_socket)
 	for (it=connected_clients.begin(); it != connected_clients.end(); ++it) {
 		buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
 		client currentClient = (*it);
-    	buffer = package_client(currentClient); 
+    buffer = package_client(currentClient); 
 
-    printf("buffer to send to client: %s", buffer);
+    printf("buffer to send to client: %s \n", buffer);
 
 		if(send(client_socket, buffer, strlen(buffer), 0) == -1){
       perror("send");
@@ -338,7 +338,7 @@ bool Server::is_valid_ip(char *client_ip){
   {
   	// retrieve info for the next client in ascending port number order.
   	logged_client currentClient = (*i);
-  	if (client_ip == currentClient.ip)
+  	if (strcmp(client_ip,currentClient.ip) == 0)
   		return true;
   }
   return false;
@@ -394,7 +394,7 @@ void Server::blocked(char *client_ip) {
   for (i = block_lists.begin(); i != block_lists.end(); ++i) {
     blocked_by current_client = (*i);
 
-    if (current_client.ip == client_ip) {
+    if (strcmp(current_client.ip,client_ip) == 0) {
       shell_success(cmd);
       current_client.blocked.sort(client::port_compare);
 

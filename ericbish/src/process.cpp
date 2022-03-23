@@ -192,13 +192,13 @@ int Process::call_command(char *command)
 bool Process::is_valid_ip(char *client_ip){
 	int acc = 1;
 	if (strcmp(client_ip,self.ip) == 0)
-		return true;
+		return false;
 	std::list<client>::iterator i;
 	for (i = connected_clients.begin(); i != connected_clients.end(); ++i)
 	{
 		// retrieve info for the next client in ascending port number order.
 		client currentClient = (*i);
-		if (client_ip == currentClient.ip)
+		if (strcmp(client_ip,currentClient.ip) == 0)
 			return true;
 	}
 	return false;
