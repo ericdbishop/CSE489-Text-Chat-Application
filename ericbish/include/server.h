@@ -21,7 +21,10 @@ struct logged_client:client {
     strcpy(hostname, to_log.hostname);
     socket_for_send = to_log.socket_for_send;
   }
-	bool operator()(const logged_client one, const logged_client two)
+};
+
+struct logged_client_compare {
+	bool operator()(const logged_client one, const logged_client two) const
 	{
 		if (atoi(one.listening_port) > atoi(two.listening_port))
 			return false;
@@ -65,9 +68,13 @@ public:
 
   void client_login(char *buffer, int socket_for_send);
   void client_logout(int sock_fd);
+  void client_exit(char *buffer);
 
-  std::list<client>::iterator find(client *to_find);
-  std::list<logged_client>::iterator find(logged_client *to_find);
+  void block_client(char *buffer);
+  void unblock_client(char *buffer);
+
+  //std::list<client>::iterator find(char *ip_to_find);
+  std::list<logged_client>::iterator find(char *ip_to_find);
 };
 
 #endif

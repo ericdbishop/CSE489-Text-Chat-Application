@@ -144,13 +144,15 @@ int Server::read_inputs(){
 
             // block structure: msg_type|from_ip|block_ip|
             } else if (strcmp(msg, "block") == 0) {
+              block_client(buffer);
 
             // unblock structure: msg_type|from_ip|unblock_ip|
             } else if (strcmp(msg, "unblock") == 0) {
+              unblock_client(buffer);
 
             // exit structure:: msg_type|sender_ip|
             } else if (strcmp(msg, "exit") == 0) {
-
+              client_exit(buffer);
             }
 
           
@@ -201,7 +203,8 @@ void Server::send_connected_clients(int client_socket)
 
 /* The main purpose of client_login is so that when the server receives a login
  * they can decide if this client has already been previously logged into the
- * server */
+ * server. If they have, they need to receive any buffered messages that were
+ * sent to them. */
 void Server::client_login(char *buffer, int socket_for_send){
 	client *newClient = (client *)malloc(sizeof(client));
 
@@ -211,18 +214,17 @@ void Server::client_login(char *buffer, int socket_for_send){
   // If the client is not already in the list of logged_clients, add it.
   //if (find(logged_clients.begin(), logged_clients.end(), newClient)
 
-  logged_client to_find = logged_client(*newClient);
-	logged_client find_result = (*find(&to_find));
+	logged_client find_result = (*find(newClient->ip));
 
   // Client is not logging in for the first time
-  if (strcmp(find_result.ip, to_find.ip) == 0){
+  if (strcmp(find_result.ip, newClient->ip) == 0){
     strcpy(find_result.status, "logged-in"); 
 
 	  std::list<char *>::iterator it;
     for (it=find_result.buffered_messages.begin(); it != find_result.buffered_messages.end(); ++it) {
 	    char *current_buffer = (*it);
 
-      if (send(find_result.socket_for_send, current_buffer, nbytes, 0) == -1) {
+      if (send(find_result.socket_for_send, current_buffer, strlen(current_buffer), 0) == -1) {
         perror("send");
       } else {
         find_result.num_msg_rcv += 1; // Increment the number of messages received.
@@ -231,8 +233,9 @@ void Server::client_login(char *buffer, int socket_for_send){
     }
   } else {
     // Client is logging in for first time
-    logged_clients.insert(logged_clients.end(), to_find);
-    logged_clients.sort(logged_client::operator());
+    logged_client new_logged_client = logged_client(*newClient);
+    logged_clients.insert(logged_clients.end(), new_logged_client);
+    logged_clients.sort(logged_client_compare());
   }
 
 }
@@ -242,17 +245,20 @@ void Server::client_logout(int sock_fd){
   for (it=connected_clients.begin(); it != connected_clients.end(); ++it) {
 	  client currentClient = (*it);
 
-   	if (strcmp(currentClient.socket_for_send, sock_fd) == 0){
+   	if (currentClient.socket_for_send == sock_fd){
    	  // client logging out
-      logged_client to_find = logged_client(currentClient);
-	    logged_client find_result = (*find(&to_find));
+	    logged_client find_result = (*find(currentClient.ip));
 
       // Client is not logging in for the first time
-      if (strcmp(find_result.ip, to_find.ip) == 0){
+      if (strcmp(find_result.ip, currentClient.ip) == 0){
         strcpy(find_result.status, "logged-out"); 
       }
     }
   }
+}
+
+void client_exit(char *buffer){
+
 }
 
 int Server::call_command(char *command){
@@ -373,6 +379,14 @@ void Server::blocked(char *client_ip) {
   }
 }
 
+void block_client(char *buffer){
+
+}
+
+void unblock_client(char *buffer){
+
+}
+
 /* The event function will handle output when a client sends a message 
  * which is routed through the server. In the case of a broadcast message,
  * the to_client_ip should be 255.255.255.255 */
@@ -383,14 +397,14 @@ void Server::event(char *buffer, int sender) {
   char *broadcast_ip = (char *)"255.255.255.255";
   std::list<char *> segments = unpack(buffer);
 
-  std::list<char *>::iterator it = segments.begin();
-  it++;
+  std::list<char *>::iterator segment = segments.begin();
+  segment++;
 
   // messages structure: "message"|src_ip|dest_ip|msg
-  from_client_ip = (*(it++));
-  to_client_ip = (*(it++));
-  msg = (char *)malloc(strlen());
-  msg = (*it);
+  from_client_ip = (*(segment++));
+  to_client_ip = (*(segment++));
+  //msg = (char *)malloc(sizeof((*segment)));
+  msg = (*segment);
 
   int sock;
   bool BROADCAST;
@@ -405,7 +419,7 @@ void Server::event(char *buffer, int sender) {
       if (BROADCAST || strcmp(currentClient.ip, to_client_ip) == 0) { // BROADCAST or client is found in the list of logged clients
         // && FD_ISSET(sock, &master)
         if (strcmp(currentClient.status, "logged-in") == 0) { // If this client is logged-in, send the message.
-          if (send(sock, buffer, nbytes, 0) == -1) {
+          if (send(sock, buffer, strlen(buffer), 0) == -1) {
             perror("send");
           } else {
             currentClient.num_msg_rcv += 1; // Increment the number of messagese received.
@@ -426,23 +440,23 @@ void Server::event(char *buffer, int sender) {
 // These functions iterate through either logged_clients or connected_clients to
 // find out if it exists. If it is not found, it returns the first element of
 // the list.
-list<logged_client>::iterator Server::find(logged_client *to_find){
+std::list<logged_client>::iterator Server::find(char *ip_to_find){
 	std::list<logged_client>::iterator it;
   for (it=logged_clients.begin(); it != logged_clients.end(); ++it) {
 	logged_client currentClient = (*it);
 	  // if client is found in the list of logged clients
-	  if (strcmp(currentClient.ip, to_find->ip) == 0)
+	  if (strcmp(currentClient.ip, ip_to_find) == 0)
       return it;
 	}
   return logged_clients.begin();
 }
-list<client>::iterator Server::find(client *to_find){
-	std::list<client>::iterator it;
-  for (it=connected_clients.begin(); it != connected_clients.end(); ++it) {
-	  client currentClient = (*it);
-	  // if client is found in the list of logged clients
-	  if (strcmp(currentClient.ip, to_find->ip) == 0)
-      return it;
-	}
-  return connected_clients.begin();
-}
+//std::list<client>::iterator Server::find(char *ip_to_find){
+	//std::list<client>::iterator it;
+  //for (it=connected_clients.begin(); it != connected_clients.end(); ++it) {
+	  //client currentClient = (*it);
+	  //// if client is found in the list of logged clients
+	  //if (strcmp(currentClient.ip, ip_to_find) == 0)
+      //return it;
+	//}
+  //return connected_clients.begin();
+//}
