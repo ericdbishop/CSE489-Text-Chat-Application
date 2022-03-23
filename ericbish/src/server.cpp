@@ -208,36 +208,39 @@ void Server::send_connected_clients(int client_socket)
 void Server::client_login(char *buffer, int socket_for_send){
 	client *newClient = (client *)malloc(sizeof(client));
 
-	receive_connected_client(buffer, newClient);
   newClient->socket_for_send = socket_for_send;
+	receive_connected_client(buffer, newClient);
 
   // If the client is not already in the list of logged_clients, add it.
   //if (find(logged_clients.begin(), logged_clients.end(), newClient)
 
-	logged_client find_result = (*find(newClient->ip));
 
-  // Client is not logging in for the first time
-  if (strcmp(find_result.ip, newClient->ip) == 0){
-    strcpy(find_result.status, "logged-in"); 
+  if (!logged_clients.empty()){
+	  logged_client find_result = (*find(newClient->ip));
 
-	  std::list<char *>::iterator it;
-    for (it=find_result.buffered_messages.begin(); it != find_result.buffered_messages.end(); ++it) {
-	    char *current_buffer = (*it);
+    // Client is not logging in for the first time
+    if (strcmp(find_result.ip, newClient->ip) == 0){
+      strcpy(find_result.status, "logged-in"); 
 
-      if (send(find_result.socket_for_send, current_buffer, strlen(current_buffer), 0) == -1) {
-        perror("send");
-      } else {
-        find_result.num_msg_rcv += 1; // Increment the number of messages received.
+	    std::list<char *>::iterator it;
+      for (it=find_result.buffered_messages.begin(); it != find_result.buffered_messages.end(); ++it) {
+	     char *current_buffer = (*it);
+
+        if (send(find_result.socket_for_send, current_buffer, strlen(current_buffer), 0) == -1) {
+          perror("send");
+        } else {
+          find_result.num_msg_rcv += 1; // Increment the number of messages received.
+        }
+
       }
-
+      return;
     }
-  } else {
-    // Client is logging in for first time
-    logged_client new_logged_client = logged_client(*newClient);
-    logged_clients.insert(logged_clients.end(), new_logged_client);
-    logged_clients.sort(logged_client::port_compare);
-  }
+  } 
 
+  // Client is logging in for first time
+  logged_client new_logged_client = logged_client(*newClient);
+  logged_clients.insert(logged_clients.end(), new_logged_client);
+  logged_clients.sort(logged_client::port_compare);
 }
 
 void Server::client_logout(int sock_fd){
@@ -245,11 +248,10 @@ void Server::client_logout(int sock_fd){
   for (it=connected_clients.begin(); it != connected_clients.end(); ++it) {
 	  client currentClient = (*it);
 
-   	if (currentClient.socket_for_send == sock_fd){
+   	if (currentClient.socket_for_send == sock_fd && !logged_clients.empty()){
    	  // client logging out
 	    logged_client find_result = (*find(currentClient.ip));
 
-      // Client is not logging in for the first time
       if (strcmp(find_result.ip, currentClient.ip) == 0){
         strcpy(find_result.status, "logged-out"); 
       }
