@@ -21,17 +21,29 @@ struct logged_client:client {
     strcpy(hostname, to_log.hostname);
     socket_for_send = to_log.socket_for_send;
   }
-};
 
-struct logged_client_compare {
-	bool operator()(const logged_client one, const logged_client two) const
+	static bool port_compare(const logged_client& one, const logged_client& two)
 	{
 		if (atoi(one.listening_port) > atoi(two.listening_port))
 			return false;
 		else
 			return true;
 	}
+
+  bool operator==(const logged_client& one) const {
+		return (strcmp(one.ip, ip) == 0);
+  }
 };
+
+//struct logged_client_compare {
+	//bool operator()(const logged_client &one, const logged_client &two) const
+	//{
+		//if (atoi(one.listening_port) > atoi(two.listening_port))
+			//return false;
+		//else
+			//return true;
+	//}
+//};
 
 /* each blocked_by structure contains the information of a client and a list of
  * every client they have blocked. This makes it easy to sort the list of
@@ -39,13 +51,17 @@ struct logged_client_compare {
 struct blocked_by:client {
   std::list<client> blocked;
 
-	bool operator()(const blocked_by one, const blocked_by two)
+	static bool port_compare(const blocked_by& one, const blocked_by& two)
 	{
 		if (atoi(one.listening_port) > atoi(two.listening_port))
 			return false;
 		else
 			return true;
 	}
+
+  bool operator==(const blocked_by& one) const {
+		return (strcmp(one.ip, ip) == 0);
+  }
 };
 
 class Server: public Process 
@@ -68,10 +84,11 @@ public:
 
   void client_login(char *buffer, int socket_for_send);
   void client_logout(int sock_fd);
-  void client_exit(char *buffer);
+  void client_exit(int sock_fd);
 
   void block_client(char *buffer);
   void unblock_client(char *buffer);
+  bool is_sender_blocked(char* sender_ip, char *receiver);
 
   //std::list<client>::iterator find(char *ip_to_find);
   std::list<logged_client>::iterator find(char *ip_to_find);

@@ -150,9 +150,9 @@ int Server::read_inputs(){
             } else if (strcmp(msg, "unblock") == 0) {
               unblock_client(buffer);
 
-            // exit structure:: msg_type|sender_ip|
+            // exit structure:: msg_type|
             } else if (strcmp(msg, "exit") == 0) {
-              client_exit(buffer);
+              client_exit(i);
             }
 
           
@@ -235,7 +235,7 @@ void Server::client_login(char *buffer, int socket_for_send){
     // Client is logging in for first time
     logged_client new_logged_client = logged_client(*newClient);
     logged_clients.insert(logged_clients.end(), new_logged_client);
-    logged_clients.sort(logged_client_compare());
+    logged_clients.sort(logged_client::port_compare);
   }
 
 }
@@ -257,7 +257,44 @@ void Server::client_logout(int sock_fd){
   }
 }
 
-void client_exit(char *buffer){
+// NEEDS TESTING
+void Server::client_exit(int sock_fd){
+  
+	std::list<client>::iterator client_it = connected_clients.begin();
+	std::list<logged_client>::iterator logged_it = logged_clients.begin();
+	std::list<blocked_by>::iterator block_it = block_lists.begin();
+
+  while (client_it != connected_clients.end() || logged_it != logged_clients.end() || block_it != block_lists.end()) {
+    if (client_it != connected_clients.end()) {
+      if ((*client_it).socket_for_send == sock_fd)
+        connected_clients.remove((*client_it));
+    
+      client_it++;
+    }
+    
+    if (logged_it != logged_clients.end()) {
+      if ((*logged_it).socket_for_send == sock_fd)
+        logged_clients.remove((*logged_it));
+      
+      logged_it++;
+    }
+
+    if (block_it != block_lists.end()) {
+      if ((*block_it).socket_for_send == sock_fd)
+        block_lists.remove((*block_it));
+      else {
+        std::list<client>::iterator it;
+        for (it = (*block_it).blocked.begin(); it != (*block_it).blocked.end(); ++it) {
+          client blocked_client = (*it);
+
+          if (blocked_client.socket_for_send == sock_fd)
+            (*block_it).blocked.remove(blocked_client);
+        }
+      }
+
+      block_it++;
+    }
+  }
 
 }
 
@@ -311,7 +348,7 @@ bool Server::is_valid_ip(char *client_ip){
  * with statistics such as their number of sent and received
  * messages, and whether they are logged in or out. */
 void Server::statistics(){
-  logged_clients.sort(client());
+  logged_clients.sort(logged_client::port_compare);
 
  int list_id, num_msg_sent, num_msg_rcv;
  char *hname, *status;
@@ -357,7 +394,7 @@ void Server::blocked(char *client_ip) {
 
     if (current_client.ip == client_ip) {
       shell_success(cmd);
-      current_client.blocked.sort(client());
+      current_client.blocked.sort(client::port_compare);
 
       /* Iterate over the sorted list of clients that are blocked and print
        * them with the same format as the list() command */
@@ -379,36 +416,90 @@ void Server::blocked(char *client_ip) {
   }
 }
 
-void block_client(char *buffer){
+void Server::block_client(char *buffer){
+  // block structure: msg_type|from_ip|block_ip|
+  std::list<char *> segments = unpack(buffer);
 
+  std::list<char *>::iterator segment = segments.begin();
+  segment++;
+
+  char *from_client_ip = (*(segment++));
+  char *block_ip = (*(segment));
+
+  
+  std::list<client>::iterator it;
+  for (it = connected_clients.begin(); it != connected_clients.end(); ++it) {
+    if (strcmp(it->ip, block_ip) == 0) break;
+  }
+
+  std::list<blocked_by>::iterator i;
+  for (i = block_lists.begin(); i != block_lists.end(); ++i) {
+    blocked_by current_client = (*i);
+
+    if (strcmp(current_client.ip, from_client_ip) == 0) {
+      current_client.blocked.insert(current_client.blocked.end(), (*it));
+      break;
+    }
+  }
 }
 
-void unblock_client(char *buffer){
+void Server::unblock_client(char *buffer){
+  // unblock structure: msg_type|from_ip|unblock_ip|
+  std::list<char *> segments = unpack(buffer);
 
+  std::list<char *>::iterator segment = segments.begin();
+  segment++;
+
+  char *from_client_ip = (*(segment++));
+  char *unblock_ip = (*(segment));
+
+  // Retrieve iterator it pointing at the client to be unblocked
+  std::list<client>::iterator it;
+  for (it = connected_clients.begin(); it != connected_clients.end(); ++it) {
+    if (strcmp(it->ip, unblock_ip) == 0) break;
+  }
+
+  // Find the block list for the client that is unblocking *it, and remove *it from the list
+  std::list<blocked_by>::iterator i;
+  for (i = block_lists.begin(); i != block_lists.end(); ++i) {
+    blocked_by current_client = (*i);
+
+    if (strcmp(current_client.ip, from_client_ip) == 0) {
+      current_client.blocked.remove((*it));
+      break;
+    }
+  }
 }
 
 /* The event function will handle output when a client sends a message 
  * which is routed through the server. In the case of a broadcast message,
  * the to_client_ip should be 255.255.255.255 */
 void Server::event(char *buffer, int sender) {
-  char *from_client_ip, *to_client_ip, *msg;
   char *format = (char *)"%-5d%-35s%-8d%-8d%-8s\n";
   char *cmd = (char *)"RELAYED";
   char *broadcast_ip = (char *)"255.255.255.255";
+  bool BROADCAST;
   std::list<char *> segments = unpack(buffer);
 
   std::list<char *>::iterator segment = segments.begin();
   segment++;
 
   // messages structure: "message"|src_ip|dest_ip|msg
-  from_client_ip = (*(segment++));
-  to_client_ip = (*(segment++));
+  char *from_client_ip = (char *)(*(segment++));
+  char *to_client_ip = (char *)(*(segment++));
   //msg = (char *)malloc(sizeof((*segment)));
-  msg = (*segment);
+  char *msg = (char *)(*segment);
+
+  BROADCAST = strcmp(broadcast_ip, to_client_ip) == 0;
+
+  // This ensures that the sender is not blocked from sending a client a message
+  if (!BROADCAST) {
+    if (is_sender_blocked(from_client_ip, to_client_ip)){
+      return;
+    }
+  }
 
   int sock;
-  bool BROADCAST;
-  BROADCAST = strcmp(broadcast_ip, to_client_ip) == 0;
 	std::list<logged_client>::iterator it;
 
   for (it=logged_clients.begin(); it != logged_clients.end(); ++it) {
@@ -416,7 +507,8 @@ void Server::event(char *buffer, int sender) {
     sock = currentClient.socket_for_send;
 
 	  if (sock != sender) {  // If client is not the sender
-      if (BROADCAST || strcmp(currentClient.ip, to_client_ip) == 0) { // BROADCAST or client is found in the list of logged clients
+      if ((BROADCAST && !is_sender_blocked(from_client_ip, currentClient.ip)) ||
+          strcmp(currentClient.ip, to_client_ip) == 0) { // BROADCAST or client is found in the list of logged clients
         // && FD_ISSET(sock, &master)
         if (strcmp(currentClient.status, "logged-in") == 0) { // If this client is logged-in, send the message.
           if (send(sock, buffer, strlen(buffer), 0) == -1) {
@@ -460,3 +552,24 @@ std::list<logged_client>::iterator Server::find(char *ip_to_find){
 	//}
   //return connected_clients.begin();
 //}
+bool Server::is_sender_blocked(char* sender_ip, char *receiver) {
+
+  std::list<blocked_by>::iterator block_it;
+  for (block_it = block_lists.begin(); block_it != block_lists.end(); ++block_it) {
+    blocked_by current_client = (*block_it);
+
+    if (strcmp(current_client.ip, receiver) == 0) {
+      std::list<client>::iterator it;
+      for (it = current_client.blocked.begin(); it != current_client.blocked.end(); ++it) {
+        client blocked_client = (*it);
+
+        if (strcmp(blocked_client.ip, sender_ip) == 0) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+
+  return false;
+}

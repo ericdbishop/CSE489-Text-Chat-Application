@@ -35,7 +35,7 @@ struct client
 	char ip[INET_ADDRSTRLEN];
 	char hostname[128];
 	/* operator() provides a sorting function for the connected_clients linked list */
-	bool operator()(const client one, const client two)
+	static bool port_compare(const client& one, const client& two)
 	{
 		if (atoi(one.listening_port) > atoi(two.listening_port))
 			return false;
@@ -45,6 +45,10 @@ struct client
 
 	// This will be the socket returned by accept()
 	int socket_for_send;
+
+  	bool operator==(const client& one) const {
+			return (strcmp(one.ip, ip) == 0);
+  	}
 };
 
 void shell_success(char *command_str);

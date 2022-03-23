@@ -60,7 +60,7 @@ void Process::receive_connected_client(char *buffer, client *newClient) {
     }
   }
     connected_clients.insert(connected_clients.end(), (*newClient));
-	connected_clients.sort(client());
+	connected_clients.sort(client::port_compare);
 }
 
 
