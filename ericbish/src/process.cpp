@@ -69,8 +69,11 @@ std::list<char *> Process::unpack(char * buffer){
   char delimiter[2];
   strcpy(delimiter, "|");
 
+  char buffer_copy[BUFFER_SIZE];
+  memcpy(buffer_copy, buffer, strlen(buffer));
+
   char *element_str;
-  element_str = strtok(buffer, delimiter);
+  element_str = strtok(buffer_copy, delimiter);
 
   std::list<char *> segments;
 
@@ -225,7 +228,6 @@ void Process::output(char *cmd, char *format, int input)
 void Process::output_error(char *cmd)
 {
 	shell_error(cmd);
-	shell_end(cmd);
 }
 
 /* Print out author string */

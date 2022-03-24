@@ -329,6 +329,7 @@ void Client::refresh(){
   }
 
   char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+  memset(buffer, '\0', BUFFER_SIZE);
 
   // buffer structure: "refresh"|
   std::list<char *> segments;
@@ -374,6 +375,7 @@ void Client::send_msg(char *client_ip, char *msg){
   }
 
   char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
+  memset(buffer, '\0', BUFFER_SIZE);
 
   // messages structure: "message"|src_ip|dest_ip|msg
   std::list<char *> segments;
@@ -542,21 +544,18 @@ void Client::msg_received(char *buffer){
   char *element_str; 
   std::list <char *> segments = unpack(buffer);
 
-  // message structure: msg_type|msg|from_ip|to_ip|
+  // messages structure: "message"|src_ip|dest_ip|msg
   std::list<char *>::iterator it;
   it = segments.begin();
-  //msg_type
-  element_str = (*it++);
-  //msg
-  element_str = (*it++);
-  msg = (char *)malloc(strlen(element_str));
-  strcpy(msg, element_str);
-  // from_ip
-  element_str = (*it);
-  strcpy(client_ip, element_str);
+  // msg_type
+  it++;
+  // src_ip
+  strcpy(client_ip, *it);
 
-  //msg = (*(it++));
-  //from_ip = (*(it++));
+  it++;
+  it++;
+  msg = (char *)malloc(strlen(*it));
+  strcpy(msg, *it);
 
   char *format = (char *)"msg from:%s\n[msg]:%s\n";
   char *cmd = (char *)"RECEIVED";

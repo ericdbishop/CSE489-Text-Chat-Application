@@ -250,14 +250,18 @@ void Server::client_logout(int sock_fd){
   for (it=connected_clients.begin(); it != connected_clients.end(); ++it) {
 	  client currentClient = (*it);
 
-   	if (currentClient.socket_for_send == sock_fd && !logged_clients.empty()){
+   	if (currentClient.socket_for_send == sock_fd){
+      connected_clients.remove(*it);
    	  // client logging out
-	    std::list<logged_client>::iterator find_result = find(currentClient.ip);
+      if (!logged_clients.empty()) {
+	      std::list<logged_client>::iterator find_result = find(currentClient.ip);
 
-      if (strcmp(find_result->ip, currentClient.ip) == 0){
-        strcpy(find_result->status, "logged-out"); 
+        if (strcmp(find_result->ip, currentClient.ip) == 0){
+          strcpy(find_result->status, "logged-out"); 
+        }
       }
     }
+
   }
 }
 
@@ -486,14 +490,24 @@ void Server::event(char *buffer, int sender) {
   std::list<char *> segments = unpack(buffer);
 
   std::list<char *>::iterator segment = segments.begin();
-  segment++;
 
   // messages structure: "message"|src_ip|dest_ip|msg
-  char *from_client_ip = (char *)(*(segment++));
-  char *to_client_ip = (char *)(*(segment++));
-  char *msg = (char *)(*segment);
+  segment++;
+  char *from_client_ip = (char *)malloc(sizeof(*segment));
+  memset(from_client_ip, '\0', sizeof(*segment));
+  strcpy(from_client_ip, *segment);
 
-  BROADCAST = strcmp(broadcast_ip, to_client_ip) == 0;
+  segment++;
+  char *to_client_ip = (char *)malloc(sizeof(*segment));
+  memset(to_client_ip, '\0', sizeof(*segment));
+  strcpy(to_client_ip, *segment);
+
+  segment++;
+  char *msg = (char *)malloc(sizeof(*segment));
+  memset(msg, '\0', sizeof(*segment));
+  strcpy(msg, *segment);
+
+  BROADCAST = strncmp(broadcast_ip, to_client_ip, sizeof(broadcast_ip)) == 0;
 
   // This ensures that the sender is not blocked from sending a client a message
   if (!BROADCAST) {
