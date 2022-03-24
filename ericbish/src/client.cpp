@@ -280,6 +280,12 @@ void Client::list() {
 
 void Client::login(char *server_ip, char *server_port){
   char *cmd = (char *)"LOGIN";
+
+  if (logged_in){
+    output_error(cmd);
+    return;
+  }
+
   server_socket = connect_to_host(server_ip, server_port);
   if (server_socket < 0) {
     output_error(cmd);
@@ -304,6 +310,12 @@ void Client::login(char *server_ip, char *server_port){
 // NEEDS TESTING
 void Client::logout(){
   char *cmd = (char *)"LOGOUT";
+
+  if (!logged_in){
+    output_error(cmd);
+    return;
+  }
+
   if (require_login(cmd) < 0) {
     output_error(cmd);
     return;

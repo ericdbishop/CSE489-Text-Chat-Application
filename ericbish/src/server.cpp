@@ -422,8 +422,7 @@ void Server::blocked(char *client_ip) {
         acc++;
     	  cse4589_print_and_log("%-5d%-35s%-20s%-8d\n", list_id, hname, ip_addr, port_listen);
       }
-
-      return;
+      break;
     }
   }
   shell_end(cmd);
@@ -480,7 +479,7 @@ void Server::unblock_client(char *buffer){
   // Retrieve iterator it pointing at the client to be unblocked
   std::list<client>::iterator it;
   for (it = connected_clients.begin(); it != connected_clients.end(); ++it) {
-    if (strcmp(it->ip, unblock_ip) == 0) break;
+    if (strncmp(it->ip, unblock_ip, strlen(unblock_ip)) == 0) break;
   }
 
   // Find the block list for the client that is unblocking *it, and remove *it from the list
@@ -488,8 +487,8 @@ void Server::unblock_client(char *buffer){
   for (i = block_lists.begin(); i != block_lists.end(); ++i) {
     blocked_by current_client = (*i);
 
-    if (strcmp(current_client.ip, from_client_ip) == 0) {
-      current_client.blocked.remove((*it));
+    if (strncmp(current_client.ip, from_client_ip, strlen(from_client_ip)) == 0) {
+      i->blocked.remove((*it));
       break;
     }
   }
