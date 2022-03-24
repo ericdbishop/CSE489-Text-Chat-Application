@@ -235,17 +235,22 @@ int Client::connect_to_host(char *server_ip, char* server_port)
 	hints.ai_socktype = SOCK_STREAM;
 
 	/* Fill up address structures */	
-	if (getaddrinfo(server_ip, server_port, &hints, &res) != 0)
-		perror("getaddrinfo failed");
+	if (getaddrinfo(server_ip, server_port, &hints, &res) != 0) {
+    return -1;
+  }
 
 	/* Socket */
 	fdsocket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-	if(fdsocket < 0)
+	if(fdsocket < 0) {
 		perror("Failed to create socket");
+    return -1;
+  }
 	
 	/* Connect */
-	if(connect(fdsocket, res->ai_addr, res->ai_addrlen) < 0)
+	if(connect(fdsocket, res->ai_addr, res->ai_addrlen) < 0) {
 		perror("Connect failed");
+    return -1;
+  }
 	
   /* Wait and then send information, as the server should be awaiting our information at this point*/
   char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
@@ -255,6 +260,7 @@ int Client::connect_to_host(char *server_ip, char* server_port)
 
   if (send(fdsocket, buffer, strlen(buffer), 0) == -1) {
     perror("send");
+    return -1;
   }
 
 	freeaddrinfo(res);
