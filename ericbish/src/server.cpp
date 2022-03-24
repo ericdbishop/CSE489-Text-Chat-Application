@@ -321,6 +321,10 @@ int Server::call_command(char *command){
   if (cmd_and_arguments.find("STATISTICS") != std::string::npos)
     statistics();
   else if (cmd_and_arguments.find("BLOCKED") != std::string::npos) {
+    if (cmd_and_arguments.size() < 16 || cmd_and_arguments.find(" ") == std::string::npos) {
+      output_error((char *)"BLOCKED");
+      return -2;
+    }
     cmd = cmd_and_arguments.substr(0,7);
     // Used to understand converting string type to a char *::w
     // https://www.tutorialspoint.com/how-to-convert-string-to-char-array-in-cplusplus 

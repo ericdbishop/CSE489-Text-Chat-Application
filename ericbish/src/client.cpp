@@ -149,9 +149,20 @@ int Client::call_command(char *command){
     exit_server();
 
   else if (cmd_and_arguments.find("SEND") != std::string::npos) {
+    if (cmd_and_arguments.size() < 10) {
+      output_error((char *)"SEND");
+      return -2;
+    }
+
     cmd = cmd_and_arguments.substr(0,4);
     // Arguments here will be both arguments separated by a space.
     string arguments = cmd_and_arguments.substr(5);
+
+    if (arguments.find(" ") == std::string::npos || cmd_and_arguments.size() < arguments.find(" ") + 1) {
+      output_error((char *)"SEND");
+      return -2;
+    }
+
     string ip = arguments.substr(0,arguments.find(" "));
     string message = arguments.substr(arguments.find(" ")+1);
 
@@ -167,8 +178,19 @@ int Client::call_command(char *command){
     send_msg(client_ip, msg);
   }
   else if (cmd_and_arguments.find("LOGIN") != std::string::npos) {
+    if (cmd_and_arguments.size() < 10) {
+      output_error((char *)"LOGIN");
+      return -2;
+    }
+
     cmd = cmd_and_arguments.substr(0,5);
     string arguments = cmd_and_arguments.substr(6);
+
+    if (arguments.find(" ") == std::string::npos || cmd_and_arguments.size() < arguments.find(" ") + 1) {
+      output_error((char *)"LOGIN");
+      return -2;
+    }
+
     string ip = arguments.substr(0,arguments.find(" "));
     string port = arguments.substr(arguments.find(" ")+1);
     // Arguments here will be both arguments separated by a space.
@@ -189,6 +211,10 @@ int Client::call_command(char *command){
     login(server_ip, server_port);
   }
   else if (cmd_and_arguments.find("UNBLOCK") != std::string::npos) {
+    if (cmd_and_arguments.size() < 16 || cmd_and_arguments.find(" ") == std::string::npos) {
+      output_error((char *)"UNBLOCK");
+      return -2;
+    }
     cmd = cmd_and_arguments.substr(0,7);
     string arguments = cmd_and_arguments.substr(8);
     char client_ip[arguments.size() + 1];
@@ -199,6 +225,10 @@ int Client::call_command(char *command){
     unblock(client_ip);
   }
   else if (cmd_and_arguments.find("BLOCK") != std::string::npos) {
+    if (cmd_and_arguments.size() < 16 || cmd_and_arguments.find(" ") == std::string::npos) {
+      output_error((char *)"BLOCK");
+      return -2;
+    }
     cmd = cmd_and_arguments.substr(0,5);
     string arguments = cmd_and_arguments.substr(6);
     char client_ip[arguments.size() + 1];
@@ -209,6 +239,10 @@ int Client::call_command(char *command){
     block(client_ip);
   }
   else if (cmd_and_arguments.find("BROADCAST") != std::string::npos) {
+    if (cmd_and_arguments.size() < 11 || cmd_and_arguments.find(" ") == std::string::npos) {
+      output_error((char *)"BROADCAST");
+      return -2;
+    }
     cmd = cmd_and_arguments.substr(0,9);
     string arguments = cmd_and_arguments.substr(10);
     char msg[arguments.size() + 1];
