@@ -128,6 +128,8 @@ char *Process::package_client(client client_to_package){
   return buffer;
 }
 
+
+
 char *Process::package(std::list<char *> segments){
   char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
   char delimiter[2];

@@ -83,6 +83,7 @@ int Client::read_inputs(){
 					//Why set this to all terminating bytes?
 					//memset(buffer, '\0', BUFFER_SIZE);
 
+
 					int nbytes;
 					if (nbytes = recv(i, buffer, BUFFER_SIZE, 0) <= 0)
 					{ // got error or connection closed by client
@@ -103,6 +104,7 @@ int Client::read_inputs(){
             char *msg = (char *)malloc(10);
             strcpy(msg, determine_msg_type(buffer));
 							
+            printf("Received: %s\n", buffer);
             /* If we are receiving a "client" message, it can be assumed that we
              * are getting a refresh or have just logged in. */
 						if (strcmp(msg, "client") == 0) {
@@ -162,7 +164,6 @@ int Client::call_command(char *command){
     message.copy(msg, message.length() + 1);
     msg[message.length()] = '\0';
 
-    printf(msg);
     send_msg(client_ip, msg);
   }
   else if (cmd_and_arguments.find("LOGIN") != std::string::npos) {
@@ -374,12 +375,12 @@ void Client::send_msg(char *client_ip, char *msg){
 
   char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
 
-  // message structure: "message"|msg|from_ip|to_ip|
+  // messages structure: "message"|src_ip|dest_ip|msg
   std::list<char *> segments;
   segments.insert(segments.end(), (char *)"message");
-  segments.insert(segments.end(), msg);
   segments.insert(segments.end(), self.ip);
   segments.insert(segments.end(), client_ip);
+  segments.insert(segments.end(), msg);
 
   strcpy(buffer, package(segments));
 
@@ -408,12 +409,12 @@ void Client::broadcast(char *msg){
   char *buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
 
   char *broadcast_ip = (char *)"255.255.255.255";
-  // message structure: "message"|msg|from_ip|to_ip|
+  // messages structure: "message"|src_ip|dest_ip|msg
   std::list<char *> segments;
   segments.insert(segments.end(), (char *)"message");
-  segments.insert(segments.end(), msg);
   segments.insert(segments.end(), self.ip);
   segments.insert(segments.end(), broadcast_ip);
+  segments.insert(segments.end(), msg);
 
   strcpy(buffer, package(segments));
 

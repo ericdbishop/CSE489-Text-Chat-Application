@@ -134,7 +134,7 @@ int Server::read_inputs(){
 					    // 4. send the complete list of connected clients to the client
 					    send_connected_clients(i);
 
-            // message structure: msg_type|msg|from_ip|to_ip|
+            // messages structure: "message"|src_ip|dest_ip|msg
             } else if (strcmp(msg, "message") == 0) {
               event(buffer, i);
 
@@ -193,6 +193,8 @@ void Server::send_connected_clients(int client_socket)
 		if(send(client_socket, buffer, strlen(buffer), 0) == -1){
       perror("send");
     }
+
+    usleep(10000);
 	}
   // As far as I can tell there is not a reason to tell the client we are done sending.
 	//buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
@@ -477,7 +479,7 @@ void Server::unblock_client(char *buffer){
  * which is routed through the server. In the case of a broadcast message,
  * the to_client_ip should be 255.255.255.255 */
 void Server::event(char *buffer, int sender) {
-  char *format = (char *)"%-5d%-35s%-8d%-8d%-8s\n";
+  char *format = (char *)"msg from:%s, to:%s\n[msg]:%s\n";
   char *cmd = (char *)"RELAYED";
   char *broadcast_ip = (char *)"255.255.255.255";
   bool BROADCAST;
@@ -489,7 +491,6 @@ void Server::event(char *buffer, int sender) {
   // messages structure: "message"|src_ip|dest_ip|msg
   char *from_client_ip = (char *)(*(segment++));
   char *to_client_ip = (char *)(*(segment++));
-  //msg = (char *)malloc(sizeof((*segment)));
   char *msg = (char *)(*segment);
 
   BROADCAST = strcmp(broadcast_ip, to_client_ip) == 0;
@@ -509,20 +510,19 @@ void Server::event(char *buffer, int sender) {
     sock = currentClient.socket_for_send;
 
 	  if (sock != sender) {  // If client is not the sender
-      if ((BROADCAST && !is_sender_blocked(from_client_ip, currentClient.ip)) ||
-          strcmp(currentClient.ip, to_client_ip) == 0) { // BROADCAST or client is found in the list of logged clients
+      if ((BROADCAST && !is_sender_blocked(from_client_ip, currentClient.ip)) || (strcmp(currentClient.ip, to_client_ip) == 0)) { // BROADCAST or client is found in the list of logged clients
         // && FD_ISSET(sock, &master)
         if (strcmp(currentClient.status, "logged-in") == 0) { // If this client is logged-in, send the message.
           if (send(sock, buffer, strlen(buffer), 0) == -1) {
             perror("send");
           } else {
-            currentClient.num_msg_rcv += 1; // Increment the number of messagese received.
+            it->num_msg_rcv += 1; // Increment the number of messagese received.
           }
         } else { // Client is logged out, so buffer the message for them
-          currentClient.buffered_messages.insert(currentClient.buffered_messages.end(), buffer);
+          it->buffered_messages.insert(currentClient.buffered_messages.end(), buffer);
         }
       } 
-	  } else currentClient.num_msg_sent += 1; // Increment sender's messages sent
+	  } else it->num_msg_sent += 1; // Increment sender's messages sent
   } 
 
   shell_success(cmd);
