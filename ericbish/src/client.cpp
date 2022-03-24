@@ -149,7 +149,7 @@ int Client::call_command(char *command){
     exit_server();
 
   else if (cmd_and_arguments.find("SEND") != std::string::npos) {
-    if (cmd_and_arguments.size() < 10) {
+    if (cmd_and_arguments.size() < 10 || cmd_and_arguments.find("SEND ") == std::string::npos) {
       output_error((char *)"SEND");
       return -2;
     }
@@ -158,7 +158,7 @@ int Client::call_command(char *command){
     // Arguments here will be both arguments separated by a space.
     string arguments = cmd_and_arguments.substr(5);
 
-    if (arguments.find(" ") == std::string::npos || cmd_and_arguments.size() < arguments.find(" ") + 1) {
+    if (arguments.find(" ") == std::string::npos || arguments.size() < arguments.find(" ") + 1) {
       output_error((char *)"SEND");
       return -2;
     }
@@ -178,7 +178,7 @@ int Client::call_command(char *command){
     send_msg(client_ip, msg);
   }
   else if (cmd_and_arguments.find("LOGIN") != std::string::npos) {
-    if (cmd_and_arguments.size() < 10) {
+    if (cmd_and_arguments.size() < 10 || cmd_and_arguments.find("LOGIN ") == std::string::npos) {
       output_error((char *)"LOGIN");
       return -2;
     }
@@ -186,7 +186,7 @@ int Client::call_command(char *command){
     cmd = cmd_and_arguments.substr(0,5);
     string arguments = cmd_and_arguments.substr(6);
 
-    if (arguments.find(" ") == std::string::npos || cmd_and_arguments.size() < arguments.find(" ") + 1) {
+    if (arguments.find(" ") == std::string::npos || arguments.size() < arguments.find(" ") + 1) {
       output_error((char *)"LOGIN");
       return -2;
     }
