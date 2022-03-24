@@ -231,10 +231,31 @@ void Server::client_login(char *buffer, int socket_for_send){
         if (send(find_result->socket_for_send, current_buffer, strlen(current_buffer), 0) == -1) {
           perror("send");
         } else {
-          find_result->num_msg_rcv += 1; // Increment the number of messages received.
+          find_result->num_msg_rcv += 1; // Increment the number of messages received
+
+          std::list<char *> segments = unpack(current_buffer);
+          std::list<char *>::iterator segment = segments.begin();
+          // messages structure: "message"|src_ip|dest_ip|msg
+          segment++;
+          char *from_client_ip = (char *)malloc(sizeof(*segment));
+          memset(from_client_ip, '\0', sizeof(*segment));
+          strcpy(from_client_ip, *segment);
+          segment++;
+          char *to_client_ip = (char *)malloc(sizeof(*segment));
+          memset(to_client_ip, '\0', sizeof(*segment));
+          strcpy(to_client_ip, *segment);
+          segment++;
+          char *msg = (char *)malloc(sizeof(*segment));
+          memset(msg, '\0', sizeof(*segment));
+          strcpy(msg, *segment);
+
+          shell_success((char *)"RELAYED");
+          cse4589_print_and_log((char *)"msg from:%s, to:%s\n[msg]:%s\n", from_client_ip, to_client_ip, msg);
+          shell_end((char *)"RELAYED");
         }
 
       }
+      find_result->buffered_messages.clear();
       return;
     }
   } 
@@ -533,6 +554,10 @@ void Server::event(char *buffer, int sender) {
   char *cmd = (char *)"RELAYED";
   char *broadcast_ip = (char *)"255.255.255.255";
   bool BROADCAST;
+  // sent will be true if the server relays a message
+  bool sent;
+  sent = false;
+
   std::list<char *> segments = unpack(buffer);
 
   std::list<char *>::iterator segment = segments.begin();
@@ -576,6 +601,7 @@ void Server::event(char *buffer, int sender) {
           if (send(sock, buffer, strlen(buffer), 0) == -1) {
             perror("send");
           } else {
+            sent = true;
             it->num_msg_rcv += 1; // Increment the number of messagese received.
           }
         } else { // Client is logged out, so buffer the message for them
@@ -585,9 +611,11 @@ void Server::event(char *buffer, int sender) {
 	  } else it->num_msg_sent += 1; // Increment sender's messages sent
   } 
 
-  shell_success(cmd);
-  cse4589_print_and_log(format, from_client_ip, to_client_ip, msg);
-  shell_end(cmd);
+  if (sent) {
+    shell_success(cmd);
+    cse4589_print_and_log(format, from_client_ip, to_client_ip, msg);
+    shell_end(cmd);
+  }
 
 }
 
