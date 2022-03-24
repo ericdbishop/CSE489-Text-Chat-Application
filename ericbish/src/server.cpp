@@ -252,6 +252,9 @@ void Server::client_login(char *buffer, int socket_for_send){
 void Server::client_logout(int sock_fd){
 	std::list<client>::iterator it;
   for (it=connected_clients.begin(); it != connected_clients.end(); ++it) {
+    if (it == connected_clients.end())
+      return;
+
 	  client currentClient = (*it);
 
    	if (currentClient.socket_for_send == sock_fd){
@@ -264,6 +267,7 @@ void Server::client_logout(int sock_fd){
           strcpy(find_result->status, "logged-out"); 
         }
       }
+      return;
     }
 
   }
@@ -278,34 +282,42 @@ void Server::client_exit(int sock_fd){
 
   while (client_it != connected_clients.end() || logged_it != logged_clients.end() || block_it != block_lists.end()) {
     if (client_it != connected_clients.end()) {
-      if ((*client_it).socket_for_send == sock_fd)
+      if ((*client_it).socket_for_send == sock_fd) {
         connected_clients.remove((*client_it));
+        client_it = connected_clients.end();
+      }
     
       client_it++;
     }
     
     if (logged_it != logged_clients.end()) {
-      if ((*logged_it).socket_for_send == sock_fd)
+      if ((*logged_it).socket_for_send == sock_fd) {
         logged_clients.remove((*logged_it));
+        logged_it = logged_clients.end();
+      }
       
       logged_it++;
     }
 
+	  std::list<blocked_by>::iterator remove_it = block_lists.begin();
     if (block_it != block_lists.end()) {
       if ((*block_it).socket_for_send == sock_fd)
-        block_lists.remove((*block_it));
+        remove_it = block_it;
       else {
         std::list<client>::iterator it;
         for (it = (*block_it).blocked.begin(); it != (*block_it).blocked.end(); ++it) {
           client blocked_client = (*it);
 
-          if (blocked_client.socket_for_send == sock_fd)
+          if (blocked_client.socket_for_send == sock_fd) {
             (*block_it).blocked.remove(blocked_client);
+            break;
+          }
         }
       }
 
       block_it++;
     }
+    block_lists.remove((*remove_it));
   }
 
 }
@@ -496,6 +508,21 @@ void Server::unblock_client(char *buffer){
       break;
     }
   }
+
+  /* THE FOLLOWING CODE IS NOT NECCESARY BUT HOLDING ONTO IT JUST IN CASE */  
+
+  //// Send buffered messages from the client that was blocked to the client unblocking them
+	//std::list<logged_client>::iterator sender = find(from_client_ip);
+  //std::list<char *>::iterator msg;
+
+  //for(msg = sender->buffered_messages.begin(); msg != sender->buffered_messages.end(); ++msg) {
+
+  //  if (strncmp(current_client.ip, from_client_ip, strlen(from_client_ip)) == 0) {
+  //    i->blocked.remove((*it));
+  //    break;
+  //  }
+  //}
+
 }
 
 /* The event function will handle output when a client sends a message 
