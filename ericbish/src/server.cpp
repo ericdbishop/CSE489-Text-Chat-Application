@@ -243,6 +243,10 @@ void Server::client_login(char *buffer, int socket_for_send){
   logged_client new_logged_client = logged_client(*newClient);
   logged_clients.insert(logged_clients.end(), new_logged_client);
   logged_clients.sort(logged_client::port_compare);
+
+  blocked_by new_client = logged_client(*newClient);
+  block_lists.insert(block_lists.end(), new_client);
+  block_lists.sort(blocked_by::port_compare);
 }
 
 void Server::client_logout(int sock_fd){
@@ -314,24 +318,24 @@ int Server::call_command(char *command){
   size_t cmd_length = cmd_and_arguments.length();
   string cmd, arguments; 
 
-  if (strcmp(command, "STATISTICS") == 0) 
+  if (cmd_and_arguments.find("STATISTICS") != std::string::npos)
     statistics();
-  else if (cmd_length > 8) {
+  else if (cmd_and_arguments.find("BLOCKED") != std::string::npos) {
     cmd = cmd_and_arguments.substr(0,7);
     // Used to understand converting string type to a char *::w
     // https://www.tutorialspoint.com/how-to-convert-string-to-char-array-in-cplusplus 
-    if (cmd.compare("BLOCKED") == 0)
-      string arguments = cmd_and_arguments.substr(8);
-      char client_ip[arguments.size() + 1];
+    string arguments = cmd_and_arguments.substr(8);
+    char client_ip[arguments.size() + 1];
 
-      arguments.copy(client_ip, arguments.length() + 1);
-      client_ip[arguments.length()] = '\0';
+    arguments.copy(client_ip, arguments.length() + 1);
+    client_ip[arguments.length()] = '\0';
 
-      blocked(client_ip);
+    blocked(client_ip);
   }
- else return -1;
+  else 
+    return -1;
 
- return 0;
+  return 0;
 }
 
 
@@ -374,7 +378,7 @@ void Server::statistics(){
   num_msg_rcv = currentClient.num_msg_rcv;
   status = currentClient.status;
   acc++;
-    cse4589_print_and_log("%-5d%-35s%-8d%-8d%-8s\n", list_id, hname, num_msg_sent, num_msg_rcv, status);
+  cse4589_print_and_log("%-5d%-35s%-8d%-8d%-8s\n", list_id, hname, num_msg_sent, num_msg_rcv, status);
  }
  shell_end(cmd);
 }
@@ -389,19 +393,19 @@ void Server::blocked(char *client_ip) {
   char *hname, *ip_addr;
 
   if (!is_valid_ip(client_ip)){
-    printf("invalid ip %s", client_ip);
+    printf("invalid ip %s\n", client_ip);
     output_error(cmd);
     return;
   }
 
   /* Iterate over clients in the block_lists until we find the one with the
    * right ip. */
+  shell_success(cmd);
   std::list<blocked_by>::iterator i;
   for (i = block_lists.begin(); i != block_lists.end(); ++i) {
     blocked_by current_client = (*i);
 
     if (strcmp(current_client.ip,client_ip) == 0) {
-      shell_success(cmd);
       current_client.blocked.sort(client::port_compare);
 
       /* Iterate over the sorted list of clients that are blocked and print
@@ -419,9 +423,10 @@ void Server::blocked(char *client_ip) {
     	  cse4589_print_and_log("%-5d%-35s%-20s%-8d\n", list_id, hname, ip_addr, port_listen);
       }
 
-      shell_end(cmd);
+      return;
     }
   }
+  shell_end(cmd);
 }
 
 void Server::block_client(char *buffer){
@@ -429,23 +434,28 @@ void Server::block_client(char *buffer){
   std::list<char *> segments = unpack(buffer);
 
   std::list<char *>::iterator segment = segments.begin();
+
   segment++;
+  char *from_client_ip = (char *)malloc(sizeof(*segment));
+  memset(from_client_ip, '\0', sizeof(*segment));
+  strcpy(from_client_ip, *segment);
 
-  char *from_client_ip = (*(segment++));
-  char *block_ip = (*(segment));
-
+  segment++;
+  char *block_ip = (char *)malloc(sizeof(*segment));
+  memset(block_ip, '\0', sizeof(*segment));
+  strcpy(block_ip, *segment);
   
   std::list<client>::iterator it;
   for (it = connected_clients.begin(); it != connected_clients.end(); ++it) {
-    if (strcmp(it->ip, block_ip) == 0) break;
+    if (strncmp(it->ip, block_ip, strlen(block_ip)) == 0) break;
   }
 
   std::list<blocked_by>::iterator i;
   for (i = block_lists.begin(); i != block_lists.end(); ++i) {
     blocked_by current_client = (*i);
 
-    if (strcmp(current_client.ip, from_client_ip) == 0) {
-      i->blocked.insert(current_client.blocked.end(), (*it));
+    if (strncmp(current_client.ip, from_client_ip, strlen(from_client_ip)) == 0) {
+      i->blocked.insert(i->blocked.end(), (*it));
       break;
     }
   }
@@ -456,10 +466,16 @@ void Server::unblock_client(char *buffer){
   std::list<char *> segments = unpack(buffer);
 
   std::list<char *>::iterator segment = segments.begin();
-  segment++;
 
-  char *from_client_ip = (*(segment++));
-  char *unblock_ip = (*(segment));
+  segment++;
+  char *from_client_ip = (char *)malloc(sizeof(*segment));
+  memset(from_client_ip, '\0', sizeof(*segment));
+  strcpy(from_client_ip, *segment);
+
+  segment++;
+  char *unblock_ip = (char *)malloc(sizeof(*segment));
+  memset(unblock_ip, '\0', sizeof(*segment));
+  strcpy(unblock_ip, *segment);
 
   // Retrieve iterator it pointing at the client to be unblocked
   std::list<client>::iterator it;

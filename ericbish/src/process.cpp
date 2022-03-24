@@ -196,8 +196,6 @@ int Process::call_command(char *command)
  * connected_clients */
 bool Process::is_valid_ip(char *client_ip){
 	int acc = 1;
-	if (strcmp(client_ip,self.ip) == 0)
-		return false;
 	std::list<client>::iterator i;
 	for (i = connected_clients.begin(); i != connected_clients.end(); ++i)
 	{

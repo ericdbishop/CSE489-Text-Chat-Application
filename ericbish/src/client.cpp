@@ -139,13 +139,13 @@ int Client::call_command(char *command){
   size_t cmd_length = cmd_and_arguments.length();
   string cmd, arguments; 
 
-  if (strcmp(command, "REFRESH") == 0)
+  if (cmd_and_arguments.find("REFRESH") != std::string::npos)
     refresh();
 
-  else if (strcmp(command, "LOGOUT") == 0)
+  else if (cmd_and_arguments.find("LOGOUT") != std::string::npos)
     logout();
 
-  else if (strcmp(command, "EXIT") == 0)
+  else if (cmd_and_arguments.find("EXIT") != std::string::npos)
     exit_server();
 
   else if (cmd_and_arguments.find("SEND") != std::string::npos) {
@@ -453,7 +453,7 @@ void Client::block(char *client_ip){
   }
 
   if (!is_valid_ip(client_ip)){
-    printf("invalid ip %s", client_ip);
+    printf("invalid ip %s\n", client_ip);
     output_error(cmd);
     return;
   }
@@ -496,7 +496,7 @@ void Client::unblock(char *client_ip){
 
  /* Invalid IP address. */
   if (!is_valid_ip(client_ip)){
-    printf("invalid ip %s", client_ip);
+    printf("invalid ip %s\n", client_ip);
     output_error(cmd);
     return;
   }
@@ -545,16 +545,19 @@ void Client::msg_received(char *buffer){
   std::list <char *> segments = unpack(buffer);
 
   // messages structure: "message"|src_ip|dest_ip|msg
-  std::list<char *>::iterator it;
-  it = segments.begin();
+  std::list<char *>::iterator it = segments.begin();
   // msg_type
-  it++;
   // src_ip
+  it++;
+  memset(client_ip, '\0', INET_ADDRSTRLEN);
   strcpy(client_ip, *it);
 
+  //dest_ip
   it++;
+  //msg
   it++;
   msg = (char *)malloc(strlen(*it));
+  memset(msg, '\0', strlen(*it));
   strcpy(msg, *it);
 
   char *format = (char *)"msg from:%s\n[msg]:%s\n";

@@ -51,6 +51,14 @@ struct logged_client:client {
 struct blocked_by:client {
   std::list<client> blocked;
 
+  blocked_by(client to_log){
+    strcpy(listening_port, to_log.listening_port);
+    listening_socket = to_log.listening_socket;
+    strcpy(ip, to_log.ip);
+    strcpy(hostname, to_log.hostname);
+    socket_for_send = to_log.socket_for_send;
+  }
+
 	static bool port_compare(const blocked_by& one, const blocked_by& two)
 	{
 		if (atoi(one.listening_port) > atoi(two.listening_port))
