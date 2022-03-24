@@ -194,7 +194,7 @@ void Server::send_connected_clients(int client_socket)
       perror("send");
     }
 
-    usleep(10000);
+    usleep(20000);
 	}
   // As far as I can tell there is not a reason to tell the client we are done sending.
 	//buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
@@ -252,6 +252,8 @@ void Server::client_login(char *buffer, int socket_for_send){
           shell_success((char *)"RELAYED");
           cse4589_print_and_log((char *)"msg from:%s, to:%s\n[msg]:%s\n", from_client_ip, to_client_ip, msg);
           shell_end((char *)"RELAYED");
+
+          usleep(20000);
         }
 
       }
@@ -605,7 +607,7 @@ void Server::event(char *buffer, int sender) {
             it->num_msg_rcv += 1; // Increment the number of messagese received.
           }
         } else { // Client is logged out, so buffer the message for them
-          it->buffered_messages.insert(currentClient.buffered_messages.end(), buffer);
+          it->add_msg(buffer);
         }
       } 
 	  } else it->num_msg_sent += 1; // Increment sender's messages sent

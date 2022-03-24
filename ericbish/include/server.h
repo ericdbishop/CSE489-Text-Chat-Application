@@ -33,6 +33,14 @@ struct logged_client:client {
   bool operator==(const logged_client& one) const {
 		return (strcmp(one.ip, ip) == 0);
   }
+
+  void add_msg(char *buffer){
+    char *buffer_copy = (char *)malloc(strlen(buffer)+1);
+    memset(buffer_copy, '\0', strlen(buffer)+1);
+    memcpy(buffer_copy, buffer, strlen(buffer)+1);
+
+    buffered_messages.insert(buffered_messages.end(), buffer_copy);
+  }
 };
 
 //struct logged_client_compare {

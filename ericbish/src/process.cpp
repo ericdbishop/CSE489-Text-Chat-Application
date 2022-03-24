@@ -65,11 +65,12 @@ void Process::receive_connected_client(char *buffer, client *newClient) {
 
 
 
-std::list<char *> Process::unpack(char * buffer){
+std::list<char *> Process::unpack(char *buffer){
   char delimiter[2];
   strcpy(delimiter, "|");
 
   char buffer_copy[BUFFER_SIZE];
+  memset(buffer_copy, '\0', BUFFER_SIZE);
   memcpy(buffer_copy, buffer, strlen(buffer));
 
   char *element_str;
