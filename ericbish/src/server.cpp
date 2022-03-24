@@ -73,7 +73,7 @@ int Server::read_inputs(){
 					if (fdaccept < 0)
 						perror("Accept failed.");
 
-					printf("\nRemote Host connected!\n");
+					//printf("\nRemote Host connected!\n");
 
 					/* Add to watched socket list */
 					FD_SET(fdaccept, &master);
@@ -95,13 +95,11 @@ int Server::read_inputs(){
 					int nbytes;
 					if (nbytes = recv(i, buffer, BUFFER_SIZE, 0) <= 0)
 					{ // got error or connection closed by client
-					 	if (nbytes == 0)
-						  printf("socket %d hung up", i);
-						else
+					 	if (nbytes != 0)
 						  perror("recv");
 
 						close(i);
-						printf("Remote Host terminated connection!\n");
+						//printf("Remote Host terminated connection!\n");
 
 						/* Remove from watched list */
 						FD_CLR(i, &master);
@@ -117,16 +115,16 @@ int Server::read_inputs(){
 						// Process incoming data from existing clients here ...
 
             // Determine message type.
-            /* Message types: client, message, refresh, block, unblock, exit?, logout? */ 
+            /* Message types: client, message, refresh, block, unblock, exit */ 
             char *msg = (char *)malloc(10);
             strcpy(msg, determine_msg_type(buffer));
-            printf("Received message: %s \n", buffer);
-            printf("msg type: %s \n", msg);
+            //printf("Received message: %s \n", buffer);
+            //printf("msg type: %s \n", msg);
 
             // client structure: msg_type|listening_port|listening_socket|ip|hostname|
             if (strcmp(msg, "client") == 0) {
 					    // 1. receive client information in a buffer - might need to wait a second im not sure
-              printf("receiving login\n");
+              //printf("receiving login\n");
 					    // 2. process the information using receive_connected_client
 					    // Make sure client is accounted for in logged_clients.
 					    client_login(buffer, i);
@@ -155,13 +153,6 @@ int Server::read_inputs(){
               client_exit(i);
             }
 
-          
-
-						// printf("\nClient sent me: %s\n", buffer);
-						// printf("ECHOing it back to the remote host ... ");
-						// // I'm pretty sure we don't want to use fdaccept when sending information to the clients
-						// if (send(fdaccept, buffer, strlen(buffer), 0) == strlen(buffer))
-						// 	printf("Done!\n");
 						fflush(stdout);
 					}
 				  free(buffer);
@@ -170,6 +161,8 @@ int Server::read_inputs(){
 		}
 	}
 }
+
+
 
 /* This function will send the list of connected clients from the server to a
  * client given the client socket number.
@@ -188,7 +181,7 @@ void Server::send_connected_clients(int client_socket)
 		client currentClient = (*it);
     buffer = package_client(currentClient); 
 
-    printf("buffer to send to client: %s \n", buffer);
+    //printf("buffer to send to client: %s \n", buffer);
 
 		if(send(client_socket, buffer, strlen(buffer), 0) == -1){
       perror("send");
@@ -196,12 +189,9 @@ void Server::send_connected_clients(int client_socket)
 
     usleep(20000);
 	}
-  // As far as I can tell there is not a reason to tell the client we are done sending.
-	//buffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
-  //strcat(buffer, "DONE\0");
-  //len = strlen(buffer);
-  //send(client_socket, buffer, len, 0);
 }
+
+
 
 /* The main purpose of client_login is so that when the server receives a login
  * they can decide if this client has already been previously logged into the
@@ -272,6 +262,8 @@ void Server::client_login(char *buffer, int socket_for_send){
   block_lists.sort(blocked_by::port_compare);
 }
 
+
+
 void Server::client_logout(int sock_fd){
 	std::list<client>::iterator it;
   for (it=connected_clients.begin(); it != connected_clients.end(); ++it) {
@@ -296,7 +288,8 @@ void Server::client_logout(int sock_fd){
   }
 }
 
-// NEEDS TESTING
+
+
 void Server::client_exit(int sock_fd){
   
 	std::list<client>::iterator client_it = connected_clients.begin();
@@ -345,6 +338,8 @@ void Server::client_exit(int sock_fd){
 
 }
 
+
+
 int Server::call_command(char *command){
   if (Process::call_command(command) == 0) return 0;
 
@@ -378,6 +373,7 @@ int Server::call_command(char *command){
 }
 
 
+
 /* This works the same as is_valid_ip in process.cpp, except it looks at
  * clients who are logged out and who are logged in. */
 bool Server::is_valid_ip(char *client_ip){
@@ -392,6 +388,7 @@ bool Server::is_valid_ip(char *client_ip){
   }
   return false;
 }
+
 
 
 /* statistics displays a numbered list of clients who are or have previously
@@ -421,6 +418,8 @@ void Server::statistics(){
  }
  shell_end(cmd);
 }
+
+
 
 /* blocked handles the BLOCKED command, which displays a list of client info
  * for each client blocked by the client who's ip is given as an argument. The
@@ -467,6 +466,8 @@ void Server::blocked(char *client_ip) {
   shell_end(cmd);
 }
 
+
+
 void Server::block_client(char *buffer){
   // block structure: msg_type|from_ip|block_ip|
   std::list<char *> segments = unpack(buffer);
@@ -498,6 +499,8 @@ void Server::block_client(char *buffer){
     }
   }
 }
+
+
 
 void Server::unblock_client(char *buffer){
   // unblock structure: msg_type|from_ip|unblock_ip|
@@ -532,21 +535,9 @@ void Server::unblock_client(char *buffer){
     }
   }
 
-  /* THE FOLLOWING CODE IS NOT NECCESARY BUT HOLDING ONTO IT JUST IN CASE */  
-
-  //// Send buffered messages from the client that was blocked to the client unblocking them
-	//std::list<logged_client>::iterator sender = find(from_client_ip);
-  //std::list<char *>::iterator msg;
-
-  //for(msg = sender->buffered_messages.begin(); msg != sender->buffered_messages.end(); ++msg) {
-
-  //  if (strncmp(current_client.ip, from_client_ip, strlen(from_client_ip)) == 0) {
-  //    i->blocked.remove((*it));
-  //    break;
-  //  }
-  //}
-
 }
+
+
 
 /* The event function will handle output when a client sends a message 
  * which is routed through the server. In the case of a broadcast message,
@@ -604,7 +595,7 @@ void Server::event(char *buffer, int sender) {
             perror("send");
           } else {
             sent = true;
-            it->num_msg_rcv += 1; // Increment the number of messagese received.
+            it->num_msg_rcv += 1; // Increment the number of messages received.
           }
         } else { // Client is logged out, so buffer the message for them
           it->add_msg(buffer);
@@ -634,16 +625,9 @@ std::list<logged_client>::iterator Server::find(char *ip_to_find){
 	}
   return logged_clients.begin();
 }
-//std::list<client>::iterator Server::find(char *ip_to_find){
-	//std::list<client>::iterator it;
-  //for (it=connected_clients.begin(); it != connected_clients.end(); ++it) {
-	  //client currentClient = (*it);
-	  //// if client is found in the list of logged clients
-	  //if (strcmp(currentClient.ip, ip_to_find) == 0)
-      //return it;
-	//}
-  //return connected_clients.begin();
-//}
+
+
+
 bool Server::is_sender_blocked(char* sender_ip, char *receiver) {
 
   std::list<blocked_by>::iterator block_it;

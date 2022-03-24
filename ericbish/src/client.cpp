@@ -17,6 +17,8 @@ Client::Client (char *port){
  // connected_clients.sort(compareClient());
 }
 
+
+
 /* read_inputs() is responsible for calling all other functions and will run so
  * long as the program is running. Much of this is taken from/based off of the bgnet guide */
 int Client::read_inputs(){
@@ -68,7 +70,7 @@ int Client::read_inputs(){
 					if (fdaccept < 0)
 						perror("Accept failed.");
 
-					printf("\nRemote Host connected!\n");
+					//printf("\nRemote Host connected!\n");
 
 					/* Add to watched socket list */
 					FD_SET(fdaccept, &master);
@@ -87,13 +89,11 @@ int Client::read_inputs(){
 					int nbytes;
 					if (nbytes = recv(i, buffer, BUFFER_SIZE, 0) <= 0)
 					{ // got error or connection closed by client
-					 	if (nbytes == 0)
-						  printf("socket %d hung up", i);
-						else
+					 	if (nbytes != 0)
 						  perror("recv");
 
 						close(i);
-						printf("Remote Host terminated connection!\n");
+						//printf("Remote Host terminated connection!\n");
 
 						/* Remove from watched list */
 						FD_CLR(i, &master);
@@ -104,7 +104,7 @@ int Client::read_inputs(){
             char *msg = (char *)malloc(10);
             strcpy(msg, determine_msg_type(buffer));
 							
-            printf("Received: %s\n", buffer);
+            //printf("Received: %s\n", buffer);
             /* If we are receiving a "client" message, it can be assumed that we
              * are getting a refresh or have just logged in. */
 						if (strcmp(msg, "client") == 0) {
@@ -130,6 +130,8 @@ int Client::read_inputs(){
 		}
 	}
 }
+
+
 
 // call_command will add a \0 to the end of each input string.
 int Client::call_command(char *command){
@@ -257,6 +259,8 @@ int Client::call_command(char *command){
  return 0;
 }
 
+
+
 // helper function for LOGIN command - taken from client.c in example code.
 int Client::connect_to_host(char *server_ip, char* server_port)
 {
@@ -318,6 +322,8 @@ void Client::list() {
   Process::list();
 }
 
+
+
 void Client::login(char *server_ip, char *server_port){
   char *cmd = (char *)"LOGIN";
 
@@ -336,25 +342,19 @@ void Client::login(char *server_ip, char *server_port){
 	FD_SET(server_socket, &master); // add server socket to fd set
   if (server_socket > fdmax)
 		fdmax = server_socket;
-  //printf("%d", server_socket);
-  // now we can use server_socket to send and receive data
 
+  // now we can use server_socket to send and receive data
   // on login the server should send the client the list of currently connected clients
 
-  // Maybe server should handle changing connected clients and the client should just request a new list of clients.
   logged_in = true;
   shell_success(cmd);
   shell_end(cmd);
 }
 
-// NEEDS TESTING
+
+
 void Client::logout(){
   char *cmd = (char *)"LOGOUT";
-
-  if (!logged_in){
-    output_error(cmd);
-    return;
-  }
 
   if (require_login(cmd) < 0) {
     output_error(cmd);
@@ -398,7 +398,8 @@ void Client::refresh(){
   shell_end(cmd);
 }
 
-// NEEDS TESTING
+
+
 void Client::send_msg(char *client_ip, char *msg){
 /* Exceptions:
 
@@ -446,7 +447,8 @@ void Client::send_msg(char *client_ip, char *msg){
   shell_end(cmd);
 }
 
-// NEEDS TESTING
+
+
 void Client::broadcast(char *msg){
   char *cmd = (char *)"BROADCAST";
   if (require_login(cmd) < 0) {
@@ -480,7 +482,8 @@ void Client::broadcast(char *msg){
   shell_end(cmd);
 }
 
-// NEEDS TESTING
+
+
 void Client::block(char *client_ip){
 /* Exceptions:
  * 
@@ -529,7 +532,8 @@ void Client::block(char *client_ip){
   shell_end(cmd);
 }
 
-// NEEDS TESTING
+
+
 // unblock structure: msg_type|from_ip|unblock_ip|
 void Client::unblock(char *client_ip){
 /* Exceptions: */
@@ -572,7 +576,8 @@ void Client::unblock(char *client_ip){
   shell_end(cmd);
 }
 
-// NEEDS TESTING
+
+
 void Client::exit_server(){
   char *cmd = (char *)"EXIT";
 
@@ -588,7 +593,9 @@ void Client::exit_server(){
   exit(0);
 }
 
-// FINISHED BUT UNTESTED
+
+
+
 /* msgReceived will handle incoming messages that are still in the received
  * message buffer and print/log them */
 void Client::msg_received(char *buffer){
@@ -621,9 +628,6 @@ void Client::msg_received(char *buffer){
 }
 
 
-/***************************
-      HELPER FUNCTIONS
-***************************/
 
 /* isBlocked returns true if a client with client_ip is blocked, and returns
  * false otherwise */
@@ -636,6 +640,8 @@ bool Client::isBlocked(char *client_ip){
   }
   return false;
 }
+
+
 
 /* Return -1 if client is not logged in, 0 if they are. */
 int Client::require_login(char *cmd){
